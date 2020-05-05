@@ -1,3 +1,4 @@
 pub(crate) mod torrents;
 pub(crate) mod general;
-pub(crate) mod db;
+pub mod repository;
+pub mod models;

@@ -5,21 +5,32 @@ authors = ["red <red.avtovo@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+# Config
 dotenv = "0.15.0"
+
+# IO
 reqwest = { version = "0.10", features = ["json", "rustls-tls"] }
 tokio = { version = "0.2", features = ["full"] }
-tokio-postgres = "0.5.3"
-serde = { version = "1.0", features = ["derive"] }
 futures = "0.3.4"
-serde_json = "1.0"
-ajson = "0.2"
-job_scheduler = "*"
 
-log = "0.4.8"
-env_logger = "0.7.1"
-
+# Db
+tokio-postgres = "0.5.3"
+postgres-types = { version = "0.1.1", features = ["derive"] }
 bb8-postgres = "0.4.0"
 bb8 = "0.4.2"
 
+# Json
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+ajson = "0.2"
+
+# Logs
+log = "0.4.8"
+env_logger = "0.7.1"
+
+job_scheduler = "1.2.1"
+uuid = { version = "0.8", features = ["serde", "v4"] }
 telegram-bot = "0.7.0"
+telegram-bot-raw = "0.7.0"
 transmission-rpc = "0.2.1"
+url = "2.1.1"

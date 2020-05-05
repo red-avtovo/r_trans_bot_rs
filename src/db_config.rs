@@ -1,6 +1,6 @@
 use std::env;
 use bb8_postgres::PostgresConnectionManager;
-use crate::logic::db::{PError, Pool};
+use crate::logic::repository::{PError, Pool};
 #[derive(Clone, Debug)]
 pub struct DbConfig {
     config: String

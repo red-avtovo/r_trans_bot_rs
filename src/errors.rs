@@ -1,4 +1,4 @@
-use crate::logic::db::{RError, PError};
+use crate::logic::repository::{RError, PError};
 use std::fmt;
 
 #[derive(Debug)]

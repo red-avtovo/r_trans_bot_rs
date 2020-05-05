@@ -1,6 +1,7 @@
 use telegram_bot::*;
 use crate::errors::BotError;
-use crate::logic::db::{save_user, DbUser, Pool};
+use crate::logic::repository::{save_user, Pool};
+use crate::logic::models::DbUser;
 
 pub mod settings_commands {
     pub const MENU: &str = "Settings ⚙️";

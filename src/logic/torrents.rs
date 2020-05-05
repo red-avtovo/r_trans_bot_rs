@@ -20,5 +20,9 @@ pub async fn process_magnet(api: Api, message: Message) -> Result<(), Error> {
     );
     api.send(message.to_source_chat().text("I see magnet").reply_markup(ReplyMarkup::InlineKeyboardMarkup(markup)))
         .await?;
+    // extract magnet link
+    // parse and clean the link
+    // create a task
+    // offer directories
     Ok(())
 }
