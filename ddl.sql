@@ -24,14 +24,10 @@ CREATE table tasks (
     id UUID PRIMARY KEY,
     user_id INTEGER NOT NULL,
     magnet VARCHAR(100) NOT NULL,
-    directory UUID NOT NULL,
     status task_status NOT NULL,
     description TEXT,
 
     CONSTRAINT tasks_user_id_users_id_fkey FOREIGN KEY (user_id)
       REFERENCES users (id) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE NO ACTION,
-    CONSTRAINT tasks_directory_dirs_id_fkey FOREIGN KEY (directory)
-      REFERENCES dirs (id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION
 );

@@ -4,7 +4,7 @@ use uuid::Uuid;
 use serde::Serialize;
 use url::Url;
 use url::form_urlencoded;
-use std::*;
+use crate::errors::MagnetMappingError;
 
 #[derive(Debug, ToSql, FromSql, Clone)]
 pub struct TelegramId(i64);
@@ -45,7 +45,6 @@ pub struct DownloadTask {
     pub id: Uuid,
     pub user_id: TelegramId,
     pub magnet: String,
-    pub directory: Uuid,
     pub status: TaskStatus,
     pub description: Option<String>,
 }
@@ -69,22 +68,6 @@ pub struct ShortMagnet {
     tr: Vec<String>,
 }
 
-#[derive(Debug, Clone)]
-pub struct MagnetMappingError(&'static str);
-    
-impl fmt::Display for MagnetMappingError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Magnet Mapping error: {}", self.0)
-    }
-}
-
-impl error::Error for MagnetMappingError {
-    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-        // Generic error, underlying cause isn't tracked.
-        None
-    }
-}
-
 impl ShortMagnet {
     fn from(string: String) -> Result<Self, MagnetMappingError> {
         let url: Url = Url::parse(string.as_ref()).expect("Invalid magnet");
@@ -94,9 +77,9 @@ impl ShortMagnet {
         .map(|pair| pair.1.to_string())
         .collect();
         let xt = match xts.len() {
-            0 => Err(MagnetMappingError("No XT parameter found")),
+            0 => Err(MagnetMappingError::new("No XT parameter found")),
             1 => Ok(xts.first().unwrap().to_owned()),
-            _ => Err(MagnetMappingError("There were found more then 1 xt parameter")),
+            _ => Err(MagnetMappingError::new("There were found more then 1 xt parameter")),
         }?;
 
         let tr: Vec<String> = parameters.filter(|pair| pair.0 == "tr")
