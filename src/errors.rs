@@ -1,5 +1,6 @@
 use crate::logic::repository::{RError, PError};
 use std::{fmt,error};
+use crate::fromError;
 
 /// ***************
 /// Bot Errors
@@ -7,23 +8,20 @@ use std::{fmt,error};
 #[derive(Debug)]
 pub struct BotError(BotErrorKind);
 
+impl BotError {
+    pub(crate) fn new(kind: BotErrorKind) -> BotError {
+        BotError(kind)
+    }
+}
+
 #[derive(Debug)]
 pub(crate) enum BotErrorKind{
     TelegramError(telegram_bot::Error),
     DbError(DbError),
 }
 
-impl From<telegram_bot::Error> for BotError {
-    fn from(error: telegram_bot::Error) -> Self {
-        BotError(BotErrorKind::TelegramError(error))
-    }
-}
-
-impl From<DbError> for BotError {
-    fn from(error: DbError) -> Self {
-        BotError(BotErrorKind::DbError(error))
-    }
-}
+fromError!(telegram_bot::Error, BotError, BotErrorKind::TelegramError);
+fromError!(DbError, BotError, BotErrorKind::DbError);
 
 impl fmt::Display for BotError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -66,7 +64,7 @@ impl error::Error for MagnetMappingError {
 /// DB ERRORS
 /// ***************
 #[derive(Debug)]
-enum DbErrorKind {
+pub(crate) enum DbErrorKind {
     PostgresError(PError),
     RuntimePostgresError(RError),
     NotFoundError(&'static str),
@@ -75,23 +73,15 @@ enum DbErrorKind {
 #[derive(Debug)]
 pub struct DbError(DbErrorKind);
 
-impl From<PError> for DbError {
-    fn from(error: PError) -> Self {
-        DbError(DbErrorKind::PostgresError(error))
+impl DbError {
+    pub(crate) fn new(kind: DbErrorKind) -> DbError {
+        DbError(kind)
     }
 }
 
-impl From<RError> for DbError {
-    fn from(error: RError) -> Self {
-        DbError(DbErrorKind::RuntimePostgresError(error))
-    }
-}
-
-impl From<&'static str> for DbError {
-    fn from(error: &'static str) -> Self {
-        DbError(DbErrorKind::NotFoundError(error))
-    }
-}
+fromError!(PError, DbError, DbErrorKind::PostgresError);
+fromError!(RError, DbError, DbErrorKind::RuntimePostgresError);
+fromError!(&'static str, DbError, DbErrorKind::NotFoundError);
 
 impl fmt::Display for DbError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -101,4 +91,19 @@ impl fmt::Display for DbError {
             DbErrorKind::NotFoundError(error) => write!(f, "{}", error),
         }
     }
+}
+
+#[macro_export]
+macro_rules! fromError {
+    (
+        $from: ty,
+        $error: ty,
+        $kind: path
+    ) => {
+        impl From<$from> for $error {
+            fn from(error: $from) -> Self {
+                <$error>::new($kind(error))
+            }
+        }
+    };
 }

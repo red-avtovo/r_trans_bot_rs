@@ -34,3 +34,9 @@ telegram-bot = "0.7.0"
 telegram-bot-raw = "0.7.0"
 transmission-rpc = "0.2.1"
 url = "2.1.1"
+rand = "0.7.3"
+
+# crypto
+aes = "0.3.2"
+ofb = "*"
+base64 = "^0.12"

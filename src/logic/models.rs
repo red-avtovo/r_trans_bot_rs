@@ -28,7 +28,8 @@ pub struct DbUser {
     pub chat: i64,
     pub first_name: String,
     pub last_name: Option<String>,
-    pub username: Option<String>
+    pub username: Option<String>,
+    pub salt: String,
 }
 
 #[derive(Clone, Debug)]
@@ -44,6 +45,7 @@ pub struct DownloadDirectory {
 pub struct DownloadTask {
     pub id: Uuid,
     pub user_id: TelegramId,
+    pub server_id: Uuid,
     pub magnet: String,
     pub status: TaskStatus,
     pub description: Option<String>,

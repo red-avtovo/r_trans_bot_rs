@@ -1,12 +1,29 @@
 use telegram_bot::*;
 use crate::errors::BotError;
-use crate::logic::repository::{save_user, Pool};
-use crate::logic::models::DbUser;
+use crate::logic::{
+    repository::{
+        save_user, Pool
+    },
+    models::DbUser,
+    crypto::{AesOfb, EncSize}
+};
+use rand::{
+    thread_rng, 
+    Rng,
+    distributions::Alphanumeric
+};
 
 pub mod settings_commands {
     pub const MENU: &str = "Settings ⚙️";
     pub const LIST_DIRECTORIES: &str = "List Directories 📂";
     pub const RESET_DIRECTORIES: &str = "Reset Directories 📂❌";
+}
+
+fn random_salt() -> String {
+    thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(AesOfb::nonce_size())
+        .collect()
 }
 
 pub async fn start_command(api: Api, pool: &Pool, message: Message) -> Result<(), BotError> {
@@ -16,7 +33,8 @@ pub async fn start_command(api: Api, pool: &Pool, message: Message) -> Result<()
         chat: m_clone.chat.id().into(),
         first_name: m_clone.from.first_name,
         last_name: m_clone.from.last_name,
-        username: m_clone.from.username
+        username: m_clone.from.username,
+        salt: random_salt(),
     };
     
     save_user(pool, user).await?;
