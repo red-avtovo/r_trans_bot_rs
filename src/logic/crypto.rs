@@ -46,10 +46,6 @@ impl Crypto {
         }
         let key: &str = &complex_key[0..32]; // u32
         let iv : &str = &complex_key[32..48]; // u16
-        let value = 5;
-        let a = vec![0; value].into_boxed_slice();
-        println!("Key size: {}", &key.len());
-        println!("IV size: {}", &iv.len());
         Crypto::new(
             key.to_string(),
             iv.to_string()

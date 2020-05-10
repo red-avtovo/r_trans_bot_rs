@@ -1,11 +1,16 @@
-use bb8;
-use bb8::RunError;
+use bb8::{
+    self,
+    RunError
+};
 use bb8_postgres;
-use tokio_postgres::NoTls;
-use tokio_postgres::row::Row;
-use crate::logic::models::*;
-use uuid::Uuid;
+use tokio_postgres::{
+    NoTls,
+    row::Row
+};
+use super::models::*;
 use crate::errors::DbError;
+use super::crypto::Crypto;
+use uuid::Uuid;
 
 pub type Pool = bb8::Pool<bb8_postgres::PostgresConnectionManager<NoTls>>;
 pub type PError = tokio_postgres::Error;
@@ -15,26 +20,32 @@ pub async fn save_user(pool: &Pool, user: DbUser) -> Result<DbUser, DbError> {
     let connection = pool.get().await?;
     let query = "INSERT INTO users(id, chat, firstName, lastName, username, salt) VALUES($1,$2,$3,$4,$5);";
     connection.execute(query, &[&user.id, &user.chat, &user.first_name, &user.last_name, &user.username, &user.salt]).await?;
-    get_user(pool, &user.id).await
+    get_user(pool, &user.id).await.map(|it| it.unwrap())
 }
 
-pub async fn get_user(pool: &Pool, id: &TelegramId) -> Result<DbUser, DbError> {
+pub async fn get_user(pool: &Pool, id: &TelegramId) -> Result<Option<DbUser>, DbError> {
     let connection = pool.get().await?;
     let query = "
     select id, chat, firstName, lastName, username, salt
     from users
     WHERE id=$1;";
     let rows = connection.query(query, &[&id]).await?;
-    let row = rows.get(0).unwrap();
-    let user = DbUser {
-        id: row.get(0),
-        chat: row.get(1),
-        first_name: row.get(2),
-        last_name: row.get(3),
-        username: row.get(4),
-        salt: row.get(5),
-    };
-    Ok(user)
+    let row = rows.get(0);
+    match row {
+        Some(row) => {
+            let user = DbUser {
+                id: row.get(0),
+                chat: row.get(1),
+                first_name: row.get(2),
+                last_name: row.get(3),
+                username: row.get(4),
+                salt: row.get(5),
+            };
+            Ok(Some(user))
+        },
+        None => Ok(None)
+    }
+    
 }
 
 pub async fn save_directory(pool: &Pool, user: &DbUser, alias: &String, path: &String) -> Result<DownloadDirectory, DbError> {
@@ -83,12 +94,14 @@ pub(crate) async fn get_directory_next_ordinal(pool: &Pool, user: &DbUser) -> Re
     }
 }
 
-pub async fn get_directory(pool: &Pool, user: DbUser, ordinal: i32) -> Result<DownloadDirectory, DbError> {
+pub async fn get_directory(pool: &Pool, user: DbUser, ordinal: i32) -> Result<Option<DownloadDirectory>, DbError> {
     let connection = pool.get().await?;
     let query = "SELECT id, user_id, alias, path, ordinal FROM dirs WHERE user_id=$1 AND ordinal=$2;";
     let rows = connection.query(query, &[&user.id, &ordinal]).await?;
-    let row = rows.get(0).ok_or(DbError::from("Directory not found"))?;
-    Ok(DownloadDirectory::from_row(&row))
+    match rows.get(0) {
+        Some(row) => Ok(Some(DownloadDirectory::from_row(&row))),
+        None => Ok(None)
+    }
 }
 
 pub async fn get_directories(pool: &Pool, user: DbUser) -> Result<Vec<DownloadDirectory>, DbError> {
@@ -110,15 +123,17 @@ pub async fn add_task(pool: &Pool, user: DbUser, server_id: &Uuid, magnet: Short
     let query = "INSERT INTO tasks(id, user_id, server_id, magnet, directory, status) VALUES($1,$2,$3,$4,$5,$6);";
     let task_id = Uuid::new_v4();
     connection.query(query, &[&task_id.to_string(), &user.id, &server_id.to_string(), &String::from(magnet), &directory.to_string(), &TaskStatus::Created]).await?;
-    get_task_by_id(pool, &task_id).await
+    get_task_by_id(pool, &task_id).await.map(|it| it.unwrap())
 }
 
-pub(crate) async fn get_task_by_id(pool: &Pool, id: &Uuid) -> Result<DownloadTask, DbError> {
+pub(crate) async fn get_task_by_id(pool: &Pool, id: &Uuid) -> Result<Option<DownloadTask>, DbError> {
     let connection = pool.get().await?;
     let query = "SELECT id, user_id, server_id, magnet, directory, status,description FROM tasks WHERE id=$1;";
     let rows = connection.query(query, &[&id.to_string()]).await?;
-    let row = rows.get(0).unwrap();
-    Ok(DownloadTask::from_row(&row))
+    match rows.get(0) {
+        Some(row) => Ok(Some(DownloadTask::from_row(&row))),
+        None => Ok(None)
+    }
 }
 
 impl DownloadTask {
@@ -134,16 +149,79 @@ impl DownloadTask {
     }
 }
 
-pub async fn update_task_status(pool: &Pool, user: DbUser, id: &Uuid, status: TaskStatus) -> Result<DownloadTask, DbError> {
+pub async fn update_task_status(pool: &Pool, user: DbUser, id: &Uuid, status: TaskStatus) -> Result<Option<DownloadTask>, DbError> {
     let connection = pool.get().await?;
     let query = "UPDATE tasks SET status=$1 WHERE id=$2 AND user_id=$3;";
     connection.execute(query, &[&status, &id.to_string(), &user.id]).await?;
     get_task_by_id(pool, id).await
 }
 
-pub async fn update_task_status_description(pool: &Pool, user: DbUser, id: &Uuid, status: TaskStatus, description: &String) -> Result<DownloadTask, DbError> {
+pub async fn update_task_status_description(pool: &Pool, user: DbUser, id: &Uuid, status: TaskStatus, description: &String) -> Result<Option<DownloadTask>, DbError> {
     let connection = pool.get().await?;
     let query = "UPDATE tasks SET status=$1, description=$2 WHERE id=$3 AND user_id=$4;";
     connection.execute(query, &[&status, &description, &id.to_string(), &user.id]).await?;
     get_task_by_id(pool, id).await
+}
+
+fn init_crypto(user: &DbUser) -> Crypto{
+    Crypto::new(
+        std::env::var("SECRET").expect("SECRET is not set"), 
+        user.salt.clone()
+    )
+    .expect("All keys should be valid since the system sets them up")
+}
+
+impl Server {
+    fn from_row(user: &DbUser, row: &Row) -> Self {
+        let crypto = init_crypto(user);
+        let username: String = row.get(3);
+        let enc_password: String = row.get(4);
+        let auth = if username.is_empty() || enc_password.is_empty() { 
+            None 
+        } else { 
+            let password = crypto.decrypt(&enc_password);
+            Some(Authentication{ username, password})
+        };
+        Server {
+            id: Uuid::parse_str(row.get(0)).expect("Uuid was generated by the system but failed to parse"),
+            user_id: row.get(1),
+            url: row.get(2),
+            auth
+        }
+    }
+}
+
+pub async fn add_server(pool: &Pool, user: &DbUser, url: &String, username: &String, password: &String) -> Result<Server, DbError> {
+    let connection = pool.get().await?;
+    let query = "INSERT INTO servers(id, user_id, url, username, password) VALUES($1,$2,$3,$4,$5);";
+    let server_id = Uuid::new_v4();
+    let crypto = init_crypto(&user);
+    let enc_password = crypto.encrypt(password);
+    connection.execute(query, &[&server_id.to_string(), &user.id, url, username, &enc_password]).await?;
+    get_server_by_id(pool, user, server_id).await
+}
+
+pub async fn delete_server(pool: &Pool, user: &DbUser, id: &Uuid) -> Result<(), DbError>{
+    let connection = pool.get().await?;
+    let query = "DELETE servers WHERE user_id=$1 AND id=$2;";
+    connection.execute(query, &[&user.id, &id.to_string()]).await?;
+    Ok(())
+}
+
+pub(crate) async fn get_server_by_id(pool: &Pool, user: &DbUser, id: Uuid) -> Result<Server, DbError> {
+    let connection = pool.get().await?;
+    let query = "SELECT id, user_id, url, username, password FROM servers WHERE id=$1;";
+    let rows = connection.query(query, &[&id.to_string()]).await?;
+    let row = rows.get(0).unwrap();
+    Ok(Server::from_row(user, &row))
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    pub fn test() {
+           
+    }
 }

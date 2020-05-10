@@ -6,7 +6,7 @@ CREATE table users (
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255),
     username VARCHAR(255),
-    salt VARCHAR(255) Not NULL
+    salt VARCHAR(255) NOT NULL
 );
 
 CREATE table dirs (

@@ -67,7 +67,6 @@ impl error::Error for MagnetMappingError {
 pub(crate) enum DbErrorKind {
     PostgresError(PError),
     RuntimePostgresError(RError),
-    NotFoundError(&'static str),
 }
 
 #[derive(Debug)]
@@ -81,14 +80,12 @@ impl DbError {
 
 fromError!(PError, DbError, DbErrorKind::PostgresError);
 fromError!(RError, DbError, DbErrorKind::RuntimePostgresError);
-fromError!(&'static str, DbError, DbErrorKind::NotFoundError);
 
 impl fmt::Display for DbError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.0 {
             DbErrorKind::PostgresError(error) => write!(f, "{}", error),
             DbErrorKind::RuntimePostgresError(error) => write!(f, "{}", error),
-            DbErrorKind::NotFoundError(error) => write!(f, "{}", error),
         }
     }
 }

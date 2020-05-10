@@ -51,6 +51,18 @@ pub struct DownloadTask {
     pub description: Option<String>,
 }
 
+pub struct Authentication {
+    pub username: String,
+    pub password: String, 
+}
+
+pub struct Server {
+    pub id: Uuid,
+    pub user_id: TelegramId,
+    pub url: String,
+    pub auth: Option<Authentication>,
+}
+
 #[derive(Debug, ToSql, FromSql, Clone)]
 #[postgres(name = "task_status")]
 pub enum TaskStatus{
@@ -116,7 +128,7 @@ impl From<ShortMagnet> for String {
 #[cfg(test)]
 mod test {
 
-    use crate::logic::models::*;
+    use super::*;
 
     #[test]
     pub fn test_short_magnet_generation_from_magnet_string() {
