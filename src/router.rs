@@ -28,7 +28,6 @@ pub async fn route(api: Api, pool: &Pool, update: Update, mut last_command: &mut
     };
 }
 
-
 #[async_trait]
 trait ErrorHandler{
     async fn handle_error(&self, api: &Api, chat_ref: &ChatRef);
@@ -41,9 +40,14 @@ impl ErrorHandler for Result<(), BotError> {
             Ok(_) => {},
             Err(error) => { 
                 error!("Error while handling the message: {}", error);
-                api.send(&chat_ref.text("Something went wrong :(")).await; 
+                match api.send(&chat_ref.text("Something went wrong :(")).await {
+                    Ok(_) => {}
+                    Err(_) => {
+                        error!("Unable to send generic error message");
+                    },
+                }; 
             }
-        }
+        };
     }
 }
 
