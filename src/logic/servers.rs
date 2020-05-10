@@ -57,7 +57,7 @@ pub async fn show_stats(api: &Api, pool: &Pool, user_id: &TelegramId, chat_ref: 
 }
 
 impl Server {
-    fn to_client(&self) -> TransClient {
+    pub fn to_client(&self) -> TransClient {
         match &self.auth {
             Some(auth) => TransClient::with_auth(&self.url, BasicAuth{
                 user: auth.username.clone(),

@@ -91,7 +91,7 @@ pub struct ShortMagnet {
 }
 
 impl ShortMagnet {
-    fn from(string: String) -> Result<Self, MagnetMappingError> {
+    pub fn from(string: String) -> Result<Self, MagnetMappingError> {
         let url: Url = Url::parse(string.as_ref()).expect("Invalid magnet");
         let parameters = url.query_pairs();
         
@@ -111,7 +111,7 @@ impl ShortMagnet {
         Ok(ShortMagnet{ xt, tr})
     }
 
-    pub fn find(string: String) -> Option<Self> {
+    pub fn find(string: &String) -> Option<Self> {
         string.split(" ")
             .find(|part| part.starts_with("magnet:?"))
             .map(|it| match ShortMagnet::from(it.to_owned()){
@@ -150,7 +150,7 @@ mod test {
 
     #[test]
     pub fn test_short_magnet_generation_from_magnet_string_in_message() {
-        let magnet = String::from("some info magnet:?xt=urn:btih:e249fe4dc957be4b4ce3ecaac280fdf1c71bc5bb&tr=http%3A%2F%2Fsometracker.com%2Fannounce&dn=ubuntu-mate-16.10-desktop-amd64.iso&tr=http%3A%2F%2Fsometracker.com%2Fannounce2 and some comment after");
+        let magnet = &String::from("some info magnet:?xt=urn:btih:e249fe4dc957be4b4ce3ecaac280fdf1c71bc5bb&tr=http%3A%2F%2Fsometracker.com%2Fannounce&dn=ubuntu-mate-16.10-desktop-amd64.iso&tr=http%3A%2F%2Fsometracker.com%2Fannounce2 and some comment after");
         let urn = String::from("urn:btih:e249fe4dc957be4b4ce3ecaac280fdf1c71bc5bb");
         let trackers = vec![ "http://sometracker.com/announce".to_owned(), "http://sometracker.com/announce2".to_owned()];
         let short = ShortMagnet::find(magnet);

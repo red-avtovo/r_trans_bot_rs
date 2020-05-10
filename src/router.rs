@@ -59,7 +59,7 @@ async fn process_message(api: Api, pool: Pool, message: Message, last_command: &
             settings_commands::MENU => settings_menu(&api, message).await?,
             _ if data.as_str().contains("magnet:") => process_magnet(api, &pool, message).await?,
             // step 2 messages
-            _ => if last_command.contains_key(user_id) {
+            _ if last_command.contains_key(user_id) => {
                 let result = match last_command.get(user_id).unwrap().as_str() {
                     direcoties_commands::ADD_DIRECTORY => add_directory_perform(&api, &pool, user_id, &message).await?,
                     servers_commands::REGISTER_SERVER => register_server_perform(&api, &pool, user_id, &message).await?,
@@ -67,6 +67,7 @@ async fn process_message(api: Api, pool: Pool, message: Message, last_command: &
                 };
                 if result { last_command.remove(user_id); }
             },
+            _ => { api.send(message.to_source_chat().text("I don't know what you mean")).await?; }
         },
         _ => {
             api.send(message.to_source_chat().text("Message type is not supported!")).await?;
@@ -77,25 +78,25 @@ async fn process_message(api: Api, pool: Pool, message: Message, last_command: &
 }
 
 async fn process_callback(api: Api, pool: &Pool, callback_query: CallbackQuery, last_command: &mut HashMap<TelegramId, String>) -> Result<(), BotError> {
-    let user_id = TelegramId::from(callback_query.from.id);
-    let chat_ref = callback_query.from.to_chat_ref();
+    let user_id = &TelegramId::from(callback_query.from.id);
+    let chat_ref = &callback_query.from.to_chat_ref();
     let data = callback_query.data.clone(); 
     match data {
-        // download:url_uuid:directory_id
-        Some(ref value) if value.starts_with("download:") => start_download(&api, value, &chat_ref).await?,
+        // download:magnet_uuid:directory_ordinal (1-64 bytes)
+        Some(ref value) if value.starts_with("download:") => start_download(&api, pool, user_id,value, chat_ref).await?,
         // static commands
         Some(ref data_string) => match data_string.as_str() {
-            direcoties_commands::LIST_DIRECTORIES => list_directories(&api, pool, &user_id, &chat_ref).await?,
+            direcoties_commands::LIST_DIRECTORIES => list_directories(&api, pool, user_id, chat_ref).await?,
             direcoties_commands::ADD_DIRECTORY => { 
                 add_directory_prepare(&api, &chat_ref).await?;
-                last_command.insert(user_id, direcoties_commands::ADD_DIRECTORY.to_owned());
+                last_command.insert(user_id.to_owned(), direcoties_commands::ADD_DIRECTORY.to_owned());
             },
-            direcoties_commands::RESET_DIRECTORIES => reset_directories(&api, pool, &user_id, &chat_ref).await?,
-            servers_commands::SERVER_STATS => show_stats(&api, pool, &user_id, &chat_ref).await?,
-            servers_commands::RESET_SERVERS => reset_servers(&api, pool, &user_id, &chat_ref).await?,
+            direcoties_commands::RESET_DIRECTORIES => reset_directories(&api, pool, user_id, chat_ref).await?,
+            servers_commands::SERVER_STATS => show_stats(&api, pool, user_id, chat_ref).await?,
+            servers_commands::RESET_SERVERS => reset_servers(&api, pool, user_id, chat_ref).await?,
             servers_commands::REGISTER_SERVER => {
-                let result = register_server_prepare(&api, pool, &user_id, &chat_ref).await?;
-                if result { last_command.insert(user_id, servers_commands::REGISTER_SERVER.to_owned()); }
+                let result = register_server_prepare(&api, pool, user_id, chat_ref).await?;
+                if result { last_command.insert(user_id.to_owned(), servers_commands::REGISTER_SERVER.to_owned()); }
             }
             _ => {}
         },

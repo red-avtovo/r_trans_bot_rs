@@ -19,7 +19,7 @@ pub mod direcoties_commands {
 }
 
 pub async fn list_directories(api: &Api, pool: &Pool, user_id: &TelegramId, chat_ref: &ChatRef) -> Result<(), BotError> {
-    let user = get_user(pool, user_id).await?.unwrap();
+    let user = &get_user(pool, user_id).await?.unwrap();
     let dirs: Vec<DownloadDirectory> = get_directories(pool, user).await?;
     let mut keyboard = InlineKeyboardMarkup::new();
     keyboard.add_row(vec![InlineKeyboardButton::callback(direcoties_commands::ADD_DIRECTORY, direcoties_commands::ADD_DIRECTORY)]);

@@ -38,6 +38,7 @@ impl Crypto {
         AesOfb::new_var(self.key.as_ref(), self.iv.as_ref()).unwrap()
     }
 
+    #[allow(dead_code)]
     pub fn new_one(complex_key: String) -> Result<Self, CryptoError> {
         if complex_key.len() != AesOfb::key_size()+AesOfb::nonce_size() {
             return Err(CryptoError::from(KeySizeError(
