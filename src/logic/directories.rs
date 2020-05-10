@@ -21,9 +21,9 @@ pub mod direcoties_commands {
 pub async fn list_directories(api: &Api, pool: &Pool, user_id: &TelegramId, chat_ref: &ChatRef) -> Result<(), BotError> {
     let user = get_user(pool, user_id).await?.unwrap();
     let dirs: Vec<DownloadDirectory> = get_directories(pool, user).await?;
-    let mut keyboard = ReplyKeyboardMarkup::new();
-    keyboard.add_row(vec![KeyboardButton::new(direcoties_commands::ADD_DIRECTORY)]);
-    keyboard.add_row(vec![KeyboardButton::new(direcoties_commands::RESET_DIRECTORIES)]);
+    let mut keyboard = InlineKeyboardMarkup::new();
+    keyboard.add_row(vec![InlineKeyboardButton::callback(direcoties_commands::ADD_DIRECTORY, direcoties_commands::ADD_DIRECTORY)]);
+    keyboard.add_row(vec![InlineKeyboardButton::callback(direcoties_commands::RESET_DIRECTORIES, direcoties_commands::RESET_DIRECTORIES)]);
     match dirs.len() {
         0 => api.send(&chat_ref.text("There are no registere directories yet").reply_markup(keyboard)).await?,
         _ => {
@@ -44,9 +44,9 @@ pub async fn add_directory_prepare(api: &Api, chat_ref: &ChatRef) -> Result<(), 
 
 pub async fn add_directory_perform(api: &Api, pool: &Pool, user_id: &TelegramId, message: &Message) -> Result<bool, BotError> {
     let user = get_user(pool, user_id).await?.unwrap();
-    let mut keyboard = ReplyKeyboardMarkup::new();
-    keyboard.add_row(vec![KeyboardButton::new(direcoties_commands::LIST_DIRECTORIES)]);
-    keyboard.add_row(vec![KeyboardButton::new(direcoties_commands::ADD_DIRECTORY)]);
+    let mut keyboard = InlineKeyboardMarkup::new();
+    keyboard.add_row(vec![InlineKeyboardButton::callback(direcoties_commands::LIST_DIRECTORIES, direcoties_commands::LIST_DIRECTORIES)]);
+    keyboard.add_row(vec![InlineKeyboardButton::callback(direcoties_commands::ADD_DIRECTORY, direcoties_commands::ADD_DIRECTORY)]);
     let text = message.text().unwrap();
     let lines = text.lines().collect::<Vec<&str>>();
     let lines_count = lines.len();
@@ -57,7 +57,7 @@ pub async fn add_directory_perform(api: &Api, pool: &Pool, user_id: &TelegramId,
             add_directory(pool, &user, &alias, &path).await?;
             api.send(&message.to_source_chat().text("Done!").reply_markup(keyboard)).await?;
             Ok(true)
-        }
+        },
         _ => {
             api.send(&message.to_source_chat().text(format!("Incorrect format. Found {} lines", lines_count)).parse_mode(ParseMode::Html)).await?;
             add_directory_prepare(api, &message.from.to_chat_ref()).await?;
@@ -66,9 +66,9 @@ pub async fn add_directory_perform(api: &Api, pool: &Pool, user_id: &TelegramId,
     }
 }
 
-pub async fn reset_directories(api: Api, pool: &Pool, user_id: &TelegramId, message: &Message) -> Result<(), BotError> {
+pub async fn reset_directories(api: &Api, pool: &Pool, user_id: &TelegramId, chat_ref: &ChatRef) -> Result<(), BotError> {
     let user = get_user(pool, user_id).await?.unwrap();
     delete_directories(pool, user).await?;
-    api.send(&message.to_source_chat().text("Done!")).await?;
+    api.send(chat_ref.text("Done!")).await?;
     Ok(())
 }

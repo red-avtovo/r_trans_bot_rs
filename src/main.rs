@@ -29,7 +29,7 @@ async fn main() -> Result<(), BotError> {
     let mut stream = api.stream();
     while let Some(update) = stream.next().await {
         let update = update?;
-        router::route(api.clone(), &db_pool, update, &mut last_command).await?;
+        router::route(api.clone(), &db_pool, update, &mut last_command).await;
     }
     Ok(())
 }

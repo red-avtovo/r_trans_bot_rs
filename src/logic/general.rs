@@ -11,7 +11,8 @@ use super::{
         TelegramId
     },
     crypto::{AesOfb, EncSize},
-    directories::direcoties_commands
+    directories::direcoties_commands,
+    servers::servers_commands,
 };
 use rand::{
     thread_rng, 
@@ -21,7 +22,6 @@ use rand::{
 
 pub mod settings_commands {
     pub const MENU: &str = "Settings ⚙️";
-    pub const SERVER_STATS: &str = "Server stats 👀";
 }
 
 fn random_salt() -> String {
@@ -31,7 +31,7 @@ fn random_salt() -> String {
         .collect()
 }
 
-pub async fn start_command(api: Api, pool: &Pool, message: Message) -> Result<(), BotError> {
+pub async fn start_command(api: &Api, pool: &Pool, message: Message) -> Result<(), BotError> {
     let m_clone = message.clone();
     let mut keyboard = ReplyKeyboardMarkup::new();
     keyboard.add_row(vec![
@@ -63,15 +63,10 @@ pub async fn start_command(api: Api, pool: &Pool, message: Message) -> Result<()
     Ok(())
 }
 
-pub async fn settings_menu(api: Api, message: Message) -> Result<(), BotError> {
-    let mut keyboard = ReplyKeyboardMarkup::new();
-    keyboard.add_row(vec![KeyboardButton::new(direcoties_commands::LIST_DIRECTORIES)]);
-    keyboard.add_row(vec![KeyboardButton::new(settings_commands::SERVER_STATS)]);
-    // list directories
-        // -> add directory
-        // -> reset directories
-    // show stats
-        // -> reset server settings
+pub async fn settings_menu(api: &Api, message: Message) -> Result<(), BotError> {
+    let mut keyboard = InlineKeyboardMarkup::new();
+    keyboard.add_row(vec![InlineKeyboardButton::callback(direcoties_commands::LIST_DIRECTORIES, direcoties_commands::LIST_DIRECTORIES)]);
+    keyboard.add_row(vec![InlineKeyboardButton::callback(servers_commands::SERVER_STATS, servers_commands::SERVER_STATS)]);
     api.send(message.to_source_chat().text(settings_commands::MENU).reply_markup(keyboard)).await?;
     Ok(())
 }

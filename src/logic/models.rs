@@ -46,16 +46,18 @@ pub struct DownloadTask {
     pub id: Uuid,
     pub user_id: TelegramId,
     pub server_id: Uuid,
-    pub magnet: String,
+    pub magnet_id: Uuid,
     pub status: TaskStatus,
     pub description: Option<String>,
 }
 
+#[derive(Debug, Clone)]
 pub struct Authentication {
     pub username: String,
     pub password: String, 
 }
 
+#[derive(Debug, Clone)]
 pub struct Server {
     pub id: Uuid,
     pub user_id: TelegramId,
@@ -74,6 +76,12 @@ pub enum TaskStatus{
     Finished,
     #[postgres(name = "error")]
     Error
+}
+
+pub struct Magnet {
+    pub id: Uuid,
+    pub user_id: TelegramId,
+    pub url: String,
 }
 
 #[derive(Debug, Clone, Serialize)]

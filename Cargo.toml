@@ -35,6 +35,7 @@ telegram-bot-raw = "0.7.0"
 transmission-rpc = "0.2.1"
 url = "2.1.1"
 rand = "0.7.3"
+async-trait = "0.1.30"
 
 # crypto
 aes = "0.3.2"
