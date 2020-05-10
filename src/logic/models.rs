@@ -6,7 +6,7 @@ use url::Url;
 use url::form_urlencoded;
 use crate::errors::MagnetMappingError;
 
-#[derive(Debug, ToSql, FromSql, Clone)]
+#[derive(Debug, ToSql, FromSql, Clone, PartialEq, Eq, Hash)]
 pub struct TelegramId(i64);
 
 impl From<i64> for TelegramId {

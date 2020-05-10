@@ -48,7 +48,7 @@ pub async fn get_user(pool: &Pool, id: &TelegramId) -> Result<Option<DbUser>, Db
     
 }
 
-pub async fn save_directory(pool: &Pool, user: &DbUser, alias: &String, path: &String) -> Result<DownloadDirectory, DbError> {
+pub async fn add_directory(pool: &Pool, user: &DbUser, alias: &String, path: &String) -> Result<DownloadDirectory, DbError> {
     let connection = pool.get().await?;
     let query = "INSERT INTO dirs(id, user_id, alias, path, ordinal) VALUES($1,$2,$3,$4,$5);";
     let dir_id = Uuid::new_v4();
@@ -109,6 +109,13 @@ pub async fn get_directories(pool: &Pool, user: DbUser) -> Result<Vec<DownloadDi
     let query = "SELECT id, user_id, alias, path, ordinal FROM dirs WHERE user_id=$1;";
     let rows:Vec<Row> = connection.query(query, &[&user.id]).await?;
     Ok(rows.iter().map(DownloadDirectory::from_row).collect())
+}
+
+pub async fn delete_directories(pool: &Pool, user: DbUser) -> Result<(), DbError> {
+    let connection = pool.get().await?;
+    let query = "DELETE dirs WHERE user_id=$1;";
+    connection.execute(query, &[&user.id]).await?;
+    Ok(())
 }
 
 pub async fn delete_directory(pool: &Pool, user: DbUser, ordinal: i32) -> Result<(), DbError> {

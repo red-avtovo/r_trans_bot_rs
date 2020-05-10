@@ -2,6 +2,8 @@ use std::env;
 use futures::StreamExt;
 use telegram_bot::*;
 use dotenv::dotenv;
+use std::collections::HashMap;
+use logic::models::TelegramId;
 
 mod router;
 mod logic;
@@ -23,11 +25,11 @@ async fn main() -> Result<(), BotError> {
 
     let token = env::var("TELEGRAM_BOT_TOKEN").expect("TELEGRAM_BOT_TOKEN not set");
     let api = Api::new(token);
-
+    let mut last_command = HashMap::<TelegramId, String>::new();
     let mut stream = api.stream();
     while let Some(update) = stream.next().await {
         let update = update?;
-        router::route(api.clone(), &db_pool, update).await?;
+        router::route(api.clone(), &db_pool, update, &mut last_command).await?;
     }
     Ok(())
 }

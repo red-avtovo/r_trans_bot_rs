@@ -1,9 +1,5 @@
 use telegram_bot::*;
-use crate::errors::{
-    BotError,
-    DbErrorKind,
-    DbError
-};
+use crate::errors::BotError;
 use super::{
     repository::{
         get_user,
@@ -14,7 +10,8 @@ use super::{
         DbUser,
         TelegramId
     },
-    crypto::{AesOfb, EncSize}
+    crypto::{AesOfb, EncSize},
+    directories::direcoties_commands
 };
 use rand::{
     thread_rng, 
@@ -24,9 +21,7 @@ use rand::{
 
 pub mod settings_commands {
     pub const MENU: &str = "Settings ⚙️";
-    pub const LIST_DIRECTORIES: &str = "List Directories 📂";
     pub const SERVER_STATS: &str = "Server stats 👀";
-    pub const RESET_DIRECTORIES: &str = "Reset Directories 📂❌";
 }
 
 fn random_salt() -> String {
@@ -63,16 +58,14 @@ pub async fn start_command(api: Api, pool: &Pool, message: Message) -> Result<()
                 }
             }
         },
-        Err(_) => {
-            api.send(&message.to_source_chat().text("Something went wrong :-(").reply_markup(keyboard)).await?; 
-        }
+        Err(error) => return Err(BotError::from(error))
     }
     Ok(())
 }
 
-pub async fn settings_menu(api: Api, message: Message) -> Result<(), Error> {
+pub async fn settings_menu(api: Api, message: Message) -> Result<(), BotError> {
     let mut keyboard = ReplyKeyboardMarkup::new();
-    keyboard.add_row(vec![KeyboardButton::new(settings_commands::LIST_DIRECTORIES)]);
+    keyboard.add_row(vec![KeyboardButton::new(direcoties_commands::LIST_DIRECTORIES)]);
     keyboard.add_row(vec![KeyboardButton::new(settings_commands::SERVER_STATS)]);
     // list directories
         // -> add directory

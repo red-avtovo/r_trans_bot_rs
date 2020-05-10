@@ -1,9 +1,7 @@
 use telegram_bot::*;
 
-pub async fn start_download(api: Api, callback_query: CallbackQuery) -> Result<(), Error> {
-    let data = callback_query.clone().data.unwrap();
-    let rq = callback_query.from.to_chat_ref().text(format!("Callback: {}", data));
-    api.send(callback_query.acknowledge()).await?;
+pub async fn start_download(api: &Api, data: &str, chat_ref: &ChatRef) -> Result<(), Error> {
+    let rq = chat_ref.text(format!("Callback: {}", data));
     api.send(rq).await?;
     Ok(())
 }
