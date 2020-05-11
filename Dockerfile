@@ -5,7 +5,7 @@ COPY Cargo.toml Cargo.toml
 RUN mkdir src/ && \
     echo "fn main() {println!(\"if you see this, the build broke\")}" > src/main.rs && \
     cargo build --release --target=x86_64-unknown-linux-musl
-RUN rm -f target/x86_64-unknown-linux-musl/release/deps/remote-transmission-bot*
+RUN rm -f target/x86_64-unknown-linux-musl/release/deps/remote_transmission_bot*
 
 COPY . .
 RUN cargo build --release --target=x86_64-unknown-linux-musl
