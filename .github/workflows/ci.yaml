@@ -41,7 +41,7 @@ jobs:
     - name: Deploy to K8S
       uses: Azure/k8s-deploy@v1
       with:
-        namespace: bujo-prod
+        namespace: bots
         manifests: deployment/manifest.yaml
         images: |
             redavtovo/r-trans-bot-rs:${{ steps.vars.outputs.sha_short }}
