@@ -5,6 +5,7 @@ COPY Cargo.toml Cargo.toml
 RUN mkdir src/ && \
     echo "fn main() {println!(\"if you see this, the build broke\")}" > src/main.rs && \
     cargo build --release --target=x86_64-unknown-linux-musl
+# Dependencies have names with _ instead of -. DON'T FORGET TO CHANGE IT
 RUN rm -f target/x86_64-unknown-linux-musl/release/deps/remote_transmission_bot*
 
 COPY . .
