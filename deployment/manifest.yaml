@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rtrans-bot-config
+  namespace: bots
+  labels:
+    app: rtrans_bot
+data:
+  HOST: "postgres.db"
+  PORT: "5432"
+  USER_NAME: "rtrans_user"
+  DB_NAME: "rtrans"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rtrans-bot
+  namespace: bots
+  labels:
+    app: rtrans_bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rtrans_bot
+  template:
+    metadata:
+      labels:
+        app: rtrans_bot
+    spec:
+      nodeSelector:
+        host: self
+      containers:
+        - name: rtrans-bot
+          image: registry.github.com/j0rsa/rtrans_bot:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: rtrans-bot-config
+            - secretRef:
+                name: rtrans-bot-secrets
