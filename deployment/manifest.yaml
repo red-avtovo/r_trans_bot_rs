@@ -33,7 +33,7 @@ spec:
         host: self
       containers:
         - name: rtrans-bot
-          image: registry.github.com/j0rsa/rtrans_bot:latest
+          image: redavtovo/r-trans-bot-rs:latest
           imagePullPolicy: Always
           envFrom:
             - configMapRef:
