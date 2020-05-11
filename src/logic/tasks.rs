@@ -55,8 +55,8 @@ pub async fn start_download(api: &Api, pool: &Pool, user_id: &TelegramId, data: 
     match dir {
         Some(dir) => {
             let server = servers.get(0).unwrap();
-            let short = ShortMagnet::from(magnet.url).unwrap();
-            add_task(pool, user, &servers[0].id, &short, &dir.id).await?;
+            let short = ShortMagnet::from(&magnet.url).unwrap();
+            add_task(pool, user, &servers[0].id, &magnet.clone()).await?;
             let client: TransClient = server.to_client();
             match client.torrent_add(TorrentAddArgs{
                 filename: Some(short.into()),
@@ -81,8 +81,6 @@ pub async fn start_download(api: &Api, pool: &Pool, user_id: &TelegramId, data: 
             api.send(chat_ref.text("No Directories found! Please add one first!").reply_markup(keyboard)).await?;
         }
     }
-    let rq = chat_ref.text(format!("Callback: {}", data));
-    api.send(rq).await?;
     Ok(())
 }
 

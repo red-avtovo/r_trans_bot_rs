@@ -25,12 +25,13 @@ pub async fn list_directories(api: &Api, pool: &Pool, user_id: &TelegramId, chat
     keyboard.add_row(vec![InlineKeyboardButton::callback(direcoties_commands::ADD_DIRECTORY, direcoties_commands::ADD_DIRECTORY)]);
     keyboard.add_row(vec![InlineKeyboardButton::callback(direcoties_commands::RESET_DIRECTORIES, direcoties_commands::RESET_DIRECTORIES)]);
     match dirs.len() {
-        0 => api.send(&chat_ref.text("There are no registere directories yet").reply_markup(keyboard)).await?,
+        0 => api.send(&chat_ref.text("There are no registered directories yet").reply_markup(keyboard)).await?,
         _ => {
             let text: String = dirs.iter().map(|dir| {
-                format!("<b>{}</b>: {}<br/>", dir.alias, dir.path)
+                format!("<b>{}</b>: {}", dir.alias, dir.path)
             })
-            .collect();
+            .collect::<Vec<String>>()
+            .join("\n");
             api.send(&chat_ref.text(text).reply_markup(keyboard).parse_mode(ParseMode::Html)).await?
         }
     };
@@ -38,7 +39,7 @@ pub async fn list_directories(api: &Api, pool: &Pool, user_id: &TelegramId, chat
 }
 
 pub async fn add_directory_prepare(api: &Api, chat_ref: &ChatRef) -> Result<(), BotError> {
-    api.send(&chat_ref.text("<b>Adding directory<br/>Directory format is</b><br/>first line: Directory alias<br/>second line: Directory path").parse_mode(ParseMode::Html)).await?;
+    api.send(&chat_ref.text("<b>Adding directory</b>\nDirectory format is\n\nfirst line: <i>Directory alias</i>\nsecond line: <i>Directory path</i>").parse_mode(ParseMode::Html)).await?;
     Ok(())
 }
 

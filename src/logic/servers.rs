@@ -31,10 +31,11 @@ pub mod servers_commands {
 
 pub async fn show_stats(api: &Api, pool: &Pool, user_id: &TelegramId, chat_ref: &ChatRef) -> Result<(), BotError> {
     let mut keyboard = InlineKeyboardMarkup::new();
+    keyboard.add_row(vec![InlineKeyboardButton::callback(servers_commands::REGISTER_SERVER, servers_commands::REGISTER_SERVER)]);
     keyboard.add_row(vec![InlineKeyboardButton::callback(servers_commands::RESET_SERVERS, servers_commands::RESET_SERVERS)]);
     let user = get_user(pool, user_id).await?.unwrap();
     let servers: Vec<Server> = get_servers_by_user_id(pool, &user).await?;
-    let mut stat_lines = vec!["Stats".to_string()];
+    let mut stat_lines = vec!["Downloads for server:".to_string()];
     // for now it is just one
     match servers.get(0) {
         Some(server) => {
@@ -51,7 +52,7 @@ pub async fn show_stats(api: &Api, pool: &Pool, user_id: &TelegramId, chat_ref: 
             stat_lines.push("Nothing yet :(".to_string())
         }
     }
-    let text = stat_lines.join("<br/>");
+    let text = stat_lines.join("\n");
     api.send(&chat_ref.text(text).reply_markup(keyboard).parse_mode(ParseMode::Html)).await?;
     Ok(())
 }
@@ -83,7 +84,7 @@ pub async fn register_server_prepare(api: &Api, pool: &Pool, user_id: &TelegramI
         api.send(&chat_ref.text("There is already a server registered!")).await?;
         Ok(false)
     } else {
-        api.send(&chat_ref.text("Enter server details in the format:<br/><i>Host:port</i><br/><i>Optional: user</i><br/><i>Optional: password</i><br/>").parse_mode(ParseMode::Html)).await?;
+        api.send(&chat_ref.text("Enter server details in the format:\n<i>Host:port</i>\n<i>Optional: user</i>\n<i>Optional: password</i>").parse_mode(ParseMode::Html)).await?;
         Ok(true)
     }
 }

@@ -14,10 +14,11 @@ tokio = { version = "0.2", features = ["full"] }
 futures = "0.3.4"
 
 # Db
-tokio-postgres = "0.5.3"
-postgres-types = { version = "0.1.1", features = ["derive"] }
+tokio-postgres = "0.5.4"
+postgres-types = { version = "0.1.1", features = ["derive", "with-uuid-0_8"] }
 bb8-postgres = "0.4.0"
 bb8 = "0.4.2"
+uuid = { version = "0.8.1", features = ["serde", "v4"] }
 
 # Json
 serde = { version = "1.0", features = ["derive"] }
@@ -29,7 +30,6 @@ log = "0.4.8"
 env_logger = "0.7.1"
 
 job_scheduler = "1.2.1"
-uuid = { version = "0.8", features = ["serde", "v4"] }
 telegram-bot = "0.7.0"
 telegram-bot-raw = "0.7.0"
 transmission-rpc = "0.2.1"

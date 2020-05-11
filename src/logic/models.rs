@@ -5,6 +5,7 @@ use serde::Serialize;
 use url::Url;
 use url::form_urlencoded;
 use crate::errors::MagnetMappingError;
+use log::*;
 
 #[derive(Debug, ToSql, FromSql, Clone, PartialEq, Eq, Hash)]
 pub struct TelegramId(i64);
@@ -12,6 +13,12 @@ pub struct TelegramId(i64);
 impl From<i64> for TelegramId {
     fn from(id: i64) -> Self {
         TelegramId(id)
+    }
+}
+
+impl From<TelegramId> for i64 {
+    fn from(id: TelegramId) -> Self {
+        id.0
     }
 }
 
@@ -78,6 +85,7 @@ pub enum TaskStatus{
     Error
 }
 
+#[derive(Debug, Clone)]
 pub struct Magnet {
     pub id: Uuid,
     pub user_id: TelegramId,
@@ -91,7 +99,8 @@ pub struct ShortMagnet {
 }
 
 impl ShortMagnet {
-    pub fn from(string: String) -> Result<Self, MagnetMappingError> {
+    pub fn from(string: &String) -> Result<Self, MagnetMappingError> {
+        debug!("Parsing magnet: {}", string);
         let url: Url = Url::parse(string.as_ref()).expect("Invalid magnet");
         let parameters = url.query_pairs();
         
@@ -112,9 +121,11 @@ impl ShortMagnet {
     }
 
     pub fn find(string: &String) -> Option<Self> {
-        string.split(" ")
+        string.split("\n")
+            .map(|line| line.split(" "))
+            .flatten()
             .find(|part| part.starts_with("magnet:?"))
-            .map(|it| match ShortMagnet::from(it.to_owned()){
+            .map(|it| match ShortMagnet::from(&it.to_string()){
                 Ok(res) =>  Some(res),
                 Err(_) => None
             })
@@ -143,7 +154,7 @@ mod test {
         let magnet = String::from("magnet:?xt=urn:btih:e249fe4dc957be4b4ce3ecaac280fdf1c71bc5bb&tr=http%3A%2F%2Fsometracker.com%2Fannounce&dn=ubuntu-mate-16.10-desktop-amd64.iso&tr=http%3A%2F%2Fsometracker.com%2Fannounce2");
         let urn = String::from("urn:btih:e249fe4dc957be4b4ce3ecaac280fdf1c71bc5bb");
         let trackers = vec![ "http://sometracker.com/announce".to_owned(), "http://sometracker.com/announce2".to_owned()];
-        let short = ShortMagnet::from(magnet).unwrap();
+        let short = ShortMagnet::from(&magnet).unwrap();
         assert_eq!(short.clone().xt, urn);
         assert_eq!(short.clone().tr, trackers);
     }
@@ -151,6 +162,17 @@ mod test {
     #[test]
     pub fn test_short_magnet_generation_from_magnet_string_in_message() {
         let magnet = &String::from("some info magnet:?xt=urn:btih:e249fe4dc957be4b4ce3ecaac280fdf1c71bc5bb&tr=http%3A%2F%2Fsometracker.com%2Fannounce&dn=ubuntu-mate-16.10-desktop-amd64.iso&tr=http%3A%2F%2Fsometracker.com%2Fannounce2 and some comment after");
+        let urn = String::from("urn:btih:e249fe4dc957be4b4ce3ecaac280fdf1c71bc5bb");
+        let trackers = vec![ "http://sometracker.com/announce".to_owned(), "http://sometracker.com/announce2".to_owned()];
+        let short = ShortMagnet::find(magnet);
+        assert!(short.clone().is_some());
+        assert_eq!(short.clone().unwrap().xt, urn);
+        assert_eq!(short.clone().unwrap().tr, trackers);
+    }
+
+    #[test]
+    pub fn test_short_magnet_generation_from_magnet_string_in_message_on_new_line() {
+        let magnet = &String::from("some info\nmagnet:?xt=urn:btih:e249fe4dc957be4b4ce3ecaac280fdf1c71bc5bb&tr=http%3A%2F%2Fsometracker.com%2Fannounce&dn=ubuntu-mate-16.10-desktop-amd64.iso&tr=http%3A%2F%2Fsometracker.com%2Fannounce2\nand some comment after");
         let urn = String::from("urn:btih:e249fe4dc957be4b4ce3ecaac280fdf1c71bc5bb");
         let trackers = vec![ "http://sometracker.com/announce".to_owned(), "http://sometracker.com/announce2".to_owned()];
         let short = ShortMagnet::find(magnet);

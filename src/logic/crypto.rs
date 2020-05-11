@@ -9,6 +9,12 @@ use aes::block_cipher_trait::{
 use std::fmt;
 use crate::fromError;
 
+use rand::{
+    thread_rng, 
+    Rng,
+    distributions::Alphanumeric
+};
+
 pub(crate) struct Crypto {
     key: Vec<u8>,
     iv: Vec<u8>,
@@ -118,6 +124,13 @@ impl fmt::Display for CryptoError {
 }
 
 impl std::error::Error for CryptoError{}
+
+pub fn random_salt() -> String {
+    thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(AesOfb::nonce_size())
+        .collect()
+}
 
 #[cfg(test)]
 mod test {

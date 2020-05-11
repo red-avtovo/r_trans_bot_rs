@@ -10,41 +10,35 @@ use super::{
         DbUser,
         TelegramId
     },
-    crypto::{AesOfb, EncSize},
+    crypto::random_salt,
     directories::direcoties_commands,
     servers::servers_commands,
 };
-use rand::{
-    thread_rng, 
-    Rng,
-    distributions::Alphanumeric
-};
+
+use log::*;
 
 pub mod settings_commands {
     pub const MENU: &str = "Settings ⚙️";
 }
 
-fn random_salt() -> String {
-    thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(AesOfb::nonce_size())
-        .collect()
-}
-
 pub async fn start_command(api: &Api, pool: &Pool, message: Message) -> Result<(), BotError> {
+    debug!("Handle /start command");
     let m_clone = message.clone();
     let mut keyboard = ReplyKeyboardMarkup::new();
     keyboard.add_row(vec![
         KeyboardButton::new(settings_commands::MENU)
     ]);
     keyboard.resize_keyboard();
+    debug!("Checking if user already exist");
     match get_user(pool, &TelegramId::from(m_clone.from.id)).await {
         Ok(result) => {
             match result {
                 Some(_) => {
-                    api.send(&message.to_source_chat().text(format!("Welcome back: {}", &message.from.first_name)).reply_markup(keyboard)).await?;
+                    debug!("User was already registered");
+                    api.send(&message.to_source_chat().text(format!("Welcome back, {}", &message.from.first_name)).reply_markup(keyboard)).await?;
                 },
                 None => {
+                    debug!("Registering new user");
                     let user=  DbUser {
                         id: m_clone.from.id.into(),
                         chat: m_clone.chat.id().into(),
@@ -54,7 +48,7 @@ pub async fn start_command(api: &Api, pool: &Pool, message: Message) -> Result<(
                         salt: random_salt(),
                     };
                     save_user(pool, user).await?;
-                    api.send(&message.to_source_chat().text(format!("Welcome: {}", &message.from.first_name)).reply_markup(keyboard)).await?;
+                    api.send(&message.to_source_chat().text(format!("Welcome, {}", &message.from.first_name)).reply_markup(keyboard)).await?;
                 }
             }
         },
