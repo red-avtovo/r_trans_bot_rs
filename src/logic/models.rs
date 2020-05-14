@@ -61,14 +61,14 @@ pub struct DownloadTask {
 #[derive(Debug, Clone)]
 pub struct Authentication {
     pub username: String,
-    pub password: String, 
+    pub password: String,
 }
 
 #[derive(Debug, Clone)]
 pub struct Server {
     pub id: Uuid,
     pub user_id: TelegramId,
-    pub url: String,
+    pub(crate) url: TransUrl,
     pub auth: Option<Authentication>,
 }
 
@@ -103,7 +103,7 @@ impl ShortMagnet {
         debug!("Parsing magnet: {}", string);
         let url: Url = Url::parse(string.as_ref()).expect("Invalid magnet");
         let parameters = url.query_pairs();
-        
+
         let xts: Vec<String> = parameters.filter(|pair| pair.0 == "xt")
         .map(|pair| pair.1.to_string())
         .collect();
@@ -141,6 +141,30 @@ impl From<ShortMagnet> for String {
         });
         let tracker_params = serializer.finish();
         format!("magnet:?xt={}&{}", &short.xt, tracker_params)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct TransUrl(String);
+
+impl TransUrl {
+    pub fn from_web_url(url: &String) -> Option<Self> {
+        let lowercased_url = url.clone().to_lowercase();
+        let base_url = lowercased_url.split("/transmission/web").into_iter().next();
+        base_url.map(|url| TransUrl(url.to_owned()))
+    }
+    pub fn to_rpc_url(&self) -> String {
+        self.0.clone()+"/transmission/rpc"
+    }
+
+    pub(crate) fn get_base_url(&self) -> String {
+        self.0.clone()
+    }
+}
+
+impl From<String> for TransUrl {
+    fn from(url: String) -> Self {
+        TransUrl(url)    
     }
 }
 
@@ -189,5 +213,18 @@ mod test {
         let short = ShortMagnet { xt: urn, tr: trackers};
         let actual:String = short.into();
         assert_eq!(actual, magnet);
+    }
+
+    #[test]
+    fn test_trans_url_rpc_generation() {
+        let url = TransUrl("http://localhost".to_owned());
+        assert_eq!("http://localhost/transmission/rpc", url.to_rpc_url())
+    }
+
+    #[test]
+    fn test_trans_url_web_parsing() {
+        let full_url = "http://localhost:9091/transmission/web/#confirm".to_owned();
+        let t = TransUrl::from_web_url(&full_url).unwrap();
+        assert_eq!("http://localhost:9091", t.get_base_url());
     }
 }

@@ -244,10 +244,11 @@ impl Server {
             let password = crypto.decrypt(&enc_password);
             Some(Authentication{ username, password})
         };
+        let url_string: String = row.get(2);
         Server {
             id: row.get(0),
             user_id: TelegramId::from(user_id),
-            url: row.get(2),
+            url: TransUrl::from(url_string),
             auth
         }
     }
