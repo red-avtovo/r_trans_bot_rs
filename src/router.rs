@@ -78,6 +78,7 @@ async fn process_message(api: Api, pool: Pool, message: Message, last_command: &
 }
 
 async fn process_callback(api: Api, pool: &Pool, callback_query: CallbackQuery, last_command: &mut HashMap<TelegramId, String>) -> Result<(), BotError> {
+    api.send(callback_query.acknowledge()).await?;
     let user_id = &TelegramId::from(callback_query.from.id);
     let chat_ref = &callback_query.from.to_chat_ref();
     let data = callback_query.data.clone(); 
@@ -102,7 +103,6 @@ async fn process_callback(api: Api, pool: &Pool, callback_query: CallbackQuery, 
         },
         _ => (),
     };
-    api.send(callback_query.acknowledge()).await?;
     match callback_query.message {
         Some(message) => api.send(message.delete()).await?,
         _ => {}
