@@ -1,11 +1,12 @@
 use aes::Aes256;
+use aes::block_cipher::{
+    BlockCipher,
+    NewBlockCipher,
+    generic_array::typenum::Unsigned
+};
 use base64::{encode, decode};
 use ofb::Ofb;
 use ofb::stream_cipher::{NewStreamCipher, SyncStreamCipher};
-use aes::block_cipher_trait::{
-    BlockCipher,
-    generic_array::typenum::Unsigned
-};
 use std::fmt;
 use crate::fromError;
 
@@ -27,7 +28,7 @@ pub trait EncSize {
     fn nonce_size() -> usize;
 }
 
-impl<C: BlockCipher> EncSize for Ofb<C> {
+impl<C: BlockCipher + NewBlockCipher> EncSize for Ofb<C> {
     fn key_size() -> usize {
         <C::KeySize as Unsigned>::to_usize()
     }
