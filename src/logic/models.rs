@@ -131,6 +131,13 @@ impl ShortMagnet {
             })
             .flatten()
     }
+
+    pub fn hash(self) -> String {
+        let parts: Vec<String> = self.xt.split(":")
+        .map(|part| String::from(part))
+        .collect();
+        parts[2].clone()
+    }
 }
 
 impl From<ShortMagnet> for String {
@@ -189,5 +196,15 @@ mod test {
         let short = ShortMagnet { xt: urn, tr: trackers};
         let actual:String = short.into();
         assert_eq!(actual, magnet);
+    }
+
+    #[test]
+    pub fn test_short_magnet_hash() {
+        let hash = String::from("e249fe4dc957be4b4ce3ecaac280fdf1c71bc5bb");
+        let urn = String::from("urn:btih:e249fe4dc957be4b4ce3ecaac280fdf1c71bc5bb");
+        let trackers = vec![ "http://sometracker.com/announce".to_owned(), "http://sometracker.com/announce2".to_owned()];
+        let short = ShortMagnet { xt: urn, tr: trackers};
+        let actual:String = short.hash();
+        assert_eq!(actual, hash);
     }
 }

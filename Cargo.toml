@@ -11,11 +11,11 @@ dotenv = "0.15.0"
 # IO
 reqwest = { version = "0.10", features = ["json", "rustls-tls"] }
 tokio = { version = "0.2", features = ["full"] }
-futures = "0.3.4"
+futures = "0.3.5"
 
 # Db
-tokio-postgres = "0.5.4"
-postgres-types = { version = "0.1.1", features = ["derive", "with-uuid-0_8"] }
+tokio-postgres = "0.5.5"
+postgres-types = { version = "0.1.2", features = ["derive", "with-uuid-0_8"] }
 bb8-postgres = "0.4.0"
 bb8 = "0.4.2"
 uuid = { version = "0.8.1", features = ["serde", "v4"] }
@@ -32,10 +32,10 @@ env_logger = "0.7.1"
 job_scheduler = "1.2.1"
 telegram-bot = "0.7.0"
 telegram-bot-raw = "0.7.0"
-transmission-rpc = "0.2.1"
+transmission-rpc = "0.2.2"
 url = "2.1.1"
 rand = "0.7.3"
-async-trait = "0.1.30"
+async-trait = "0.1.36"
 
 # crypto
 aes = "0.3.2"

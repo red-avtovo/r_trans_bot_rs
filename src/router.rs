@@ -84,6 +84,8 @@ async fn process_callback(api: Api, pool: &Pool, callback_query: CallbackQuery, 
     match data {
         // download:magnet_uuid:directory_ordinal (1-64 bytes)
         Some(ref value) if value.starts_with("download:") => start_download(&api, pool, user_id,value, chat_ref).await?,
+        // t_status:task_uuid
+        Some(ref value) if value.starts_with("t_status:") => update_task_status(&api, pool, user_id,value, &callback_query.clone().message.unwrap()).await?,
         // static commands
         Some(ref data_string) => match data_string.as_str() {
             direcoties_commands::LIST_DIRECTORIES => list_directories(&api, pool, user_id, chat_ref).await?,
