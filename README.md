@@ -1,5 +1,7 @@
 # Remote Transmission Telegram Bot
 
+![CI](https://github.com/red-avtovo/r_trans_bot_rs/workflows/CI/badge.svg)
+
 This bot allows you to send magnet links to bot and start tasks to preconfigured server with preconfigured directories
 
 ## Build locally
