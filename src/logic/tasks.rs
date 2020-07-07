@@ -156,7 +156,7 @@ fn torrent_status(torrent: &Torrent) -> String {
     };
     let filled: String = (0..percent/10).map(|_|"◾️").collect();
     let empty: String = (percent/10..10).map(|_|"◻️").collect();
-    format!("{}{}[{}%]\nUpdated at:{}", filled, empty, percent, Utc::now().format("%d.%m.%Y %H:%M:%S"))
+    format!("{}{}[{}%]\nUpdated at: {}", filled, empty, percent, Utc::now().format("%d.%m.%Y %H:%M:%S"))
 }
 
 pub async fn process_magnet(api: Api, pool: &Pool, message: Message) -> Result<(), BotError> {
