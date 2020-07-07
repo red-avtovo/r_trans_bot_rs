@@ -106,7 +106,7 @@ async fn process_callback(api: Api, pool: &Pool, callback_query: CallbackQuery, 
         _ => (),
     };
     match callback_query.message {
-        Some(message) => api.send(message.delete()).await?,
+        Some(message) if data.is_some() && !data.unwrap().starts_with("t_status:")=> api.send(message.delete()).await?,
         _ => {}
     }
     Ok(())
