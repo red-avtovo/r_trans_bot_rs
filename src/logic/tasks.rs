@@ -154,7 +154,7 @@ fn torrent_status(torrent: &Torrent) -> String {
         Some(percent) => (percent * 100.0) as i32,
         _ => return String::default()
     };
-    let filled: String = (0..percent/10).map(|_|"◾️").collect();
+    let filled: String = (0..percent/10).map(|_|"❇️").collect();
     let empty: String = (percent/10..10).map(|_|"◻️").collect();
     format!("{}{}[{}%]\nUpdated at: {}", filled, empty, percent, Utc::now().format("%d.%m.%Y %H:%M:%S"))
 }
