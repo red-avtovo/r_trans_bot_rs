@@ -36,6 +36,7 @@ transmission-rpc = "0.2.2"
 url = "2.1.1"
 rand = "0.7.3"
 async-trait = "0.1.36"
+chrono = "0.4.13"
 
 # crypto
 aes = "0.4.0"

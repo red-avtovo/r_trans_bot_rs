@@ -33,6 +33,7 @@ use transmission_rpc::{
         Torrent,
     }
 };
+use chrono::prelude::*;
 
 pub mod task_commands {
     pub const TASK_STATUS: &str = "Update task status 👀";
@@ -150,12 +151,12 @@ pub async fn update_task_status(api: &Api, pool: &Pool, user_id: &TelegramId, da
 
 fn torrent_status(torrent: &Torrent) -> String {
     let percent = match torrent.percent_done {
-        Some(percent) => percent as i32,
+        Some(percent) => (percent * 100.0) as i32,
         _ => return String::default()
     };
     let filled: String = (0..percent/10).map(|_|"◾️").collect();
     let empty: String = (percent/10..10).map(|_|"◻️").collect();
-    format!("{}{}[{}%]", filled, empty, percent)
+    format!("{}{}[{}%]\nUpdated at:{}", filled, empty, percent, Utc::now().format("%d.%m.%Y %H:%M:%S"))
 }
 
 pub async fn process_magnet(api: Api, pool: &Pool, message: Message) -> Result<(), BotError> {
