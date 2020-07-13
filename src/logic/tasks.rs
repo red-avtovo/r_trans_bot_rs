@@ -139,15 +139,21 @@ pub async fn update_task_status(api: &Api, pool: &Pool, user_id: &TelegramId, da
         _ => return Ok(())
     };
     
-    let short = MagnetLink::from(&magnet.url).unwrap();
-    let hash = short.hash();
+    let link = MagnetLink::from(&magnet.url).unwrap();
+    let hash = link.clone().hash();
     let client: TransClient = server.to_client();
     match client.torrent_get(None, Some(vec![Id::Hash(hash.clone())])).await {
         Ok(response) => {
-            let torrent = response.arguments.torrents.iter().next().unwrap();
-            let name = torrent.name.as_ref().unwrap_or(&hash);
-            api.send(message.edit_text(format!("{}\n{}", &name, torrent_status(torrent)))
-                .reply_markup(update_task_status_button(&task.id, torrent))).await?;
+            match response.arguments.torrents.iter().next() {
+                Some(torrent) => {
+                    let name = torrent.name.as_ref().unwrap_or(&hash);
+                    api.send(message.edit_text(format!("{}\n{}", &name, torrent_status(torrent)))
+                        .reply_markup(update_task_status_button(&task.id, torrent))).await?;
+                },
+                None => {
+                    api.send(message.edit_text(format!("Torrent\n{}\nwas removed", &link.dn()))).await?;
+                }
+            }
         },
         _ => {
             api.send(message.edit_text(format!("{}\nTorrent was not found on the server!", &hash))).await?;
