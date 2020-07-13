@@ -1,7 +1,6 @@
 name: PR builder
 
 on:  
-  label:
   pull_request:
     branches:
       - master
