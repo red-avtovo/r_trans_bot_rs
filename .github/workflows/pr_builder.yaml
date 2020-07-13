@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    if: contains(github.event.pull_request.labels.*.name, 'deploy') == false
     runs-on: ubuntu-latest
 
     steps:
@@ -25,12 +26,17 @@ jobs:
       run: |
         docker build -t redavtovo/r-trans-bot-rs:${{ steps.vars.outputs.sha_short }} .
 
-  push-deploy:
+  build-push-deploy:
     if: contains(github.event.pull_request.labels.*.name, 'deploy')
     needs: build
     runs-on: ubuntu-latest
 
     steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
+
     - name: Docker login
       uses: azure/docker-login@v1
       with:
@@ -42,8 +48,9 @@ jobs:
       run: |
          echo ::set-output name=sha_short::$(git rev-parse --short=6 ${{ github.sha }})
 
-    - name: Deploy
+    - name: Build and Deploy
       run: |
+        docker build -t redavtovo/r-trans-bot-rs:${{ steps.vars.outputs.sha_short }} .
         docker tag redavtovo/r-trans-bot-rs:${{ steps.vars.outputs.sha_short }} redavtovo/r-trans-bot-rs:latest
         docker push redavtovo/r-trans-bot-rs:${{ steps.vars.outputs.sha_short }}
         docker push redavtovo/r-trans-bot-rs:latest
