@@ -1,7 +1,8 @@
 name: PR builder
 
-on:  
+on:
   pull_request:
+    types: [opened, synchronize, labeled]
     branches:
       - master
 
@@ -25,7 +26,7 @@ jobs:
         docker build -t redavtovo/r-trans-bot-rs:${{ steps.vars.outputs.sha_short }} .
 
   push-deploy:
-    if: github.event.label.name == 'deploy'
+    if: contains(github.event.issue.labels.*.name, 'deploy')
     runs-on: ubuntu-latest
 
     steps:
