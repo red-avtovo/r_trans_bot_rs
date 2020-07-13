@@ -57,7 +57,7 @@ fn update_task_status_button(task_id: &Uuid, torrent: &Torrent) -> InlineKeyboar
     let percent = torrent.percent_done;
     let mut keyboard = InlineKeyboardMarkup::new();
     match percent {
-        Some(ref value) if value == 1 => {
+        Some(ref value) if value.to_owned() == 1.0_f32 => {
             //TODO: remove torrent button
         },
         _ => {
@@ -99,11 +99,11 @@ pub async fn start_download(api: &Api, pool: &Pool, user_id: &TelegramId, data: 
             }).await {
                 Ok(response) => {
                     let arguments: TorrentAdded = response.arguments;
-                    let name: String = arguments.torrent_added.name
-                        .unwrap_or(arguments.torrent_added.hash_string.unwrap());
-                    
+                    let torrent = arguments.torrent_added;
+                    let name: String = torrent.clone().name
+                        .unwrap_or(torrent.clone().hash_string.unwrap());
                     api.send(chat_ref.text(format!("Downloading {}", &name))
-                    .reply_markup(update_task_status_button(&task.id))).await?;
+                    .reply_markup(update_task_status_button(&task.id, &torrent))).await?;
                 }
                 Err(_) => {
                     api.send(chat_ref.text("Unable to add task")).await?;
