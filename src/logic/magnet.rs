@@ -73,6 +73,15 @@ impl MagnetLink {
         let tracker_params = serializer.finish();
         format!("magnet:?xt={}&{}", &self.xt, tracker_params)
     }
+
+    pub fn full_link(self) -> String {
+        let mut serializer = form_urlencoded::Serializer::new(String::new());
+        self.tr.iter().for_each(|tr| {
+            &serializer.append_pair("tr", tr);
+        });
+        let tracker_params = serializer.finish();
+        format!("magnet:?dn={}&xt={}&{}", &self.dn, &self.xt, tracker_params)
+    }
 }
 
 fn hash_from_xt(xt: &String) -> String {

@@ -35,7 +35,7 @@ CREATE table magnets
 (
     id         UUID PRIMARY KEY,
     user_id    BIGINT       NULL NULL REFERENCES users ON UPDATE RESTRICT ON DELETE RESTRICT,
-    url        VARCHAR(512) NOT NULL,
+    url        VARCHAR(4096) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

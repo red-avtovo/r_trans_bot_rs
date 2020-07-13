@@ -93,15 +93,14 @@ pub async fn start_download(api: &Api, pool: &Pool, user_id: &TelegramId, data: 
             let task = add_task(pool, user, &server.id, &magnet.clone()).await?;
             let client: TransClient = server.to_client();
             match client.torrent_add(TorrentAddArgs{
-                filename: Some(magnet_link.short_link()),
+                filename: Some(magnet_link.clone().short_link()),
                 download_dir: Some(dir.path),
                 ..TorrentAddArgs::default()
             }).await {
                 Ok(response) => {
                     let arguments: TorrentAdded = response.arguments;
                     let torrent = arguments.torrent_added;
-                    let name: String = torrent.clone().name
-                        .unwrap_or(torrent.clone().hash_string.unwrap());
+                    let name: String = magnet_link.dn();
                     api.send(chat_ref.text(format!("Downloading {}", &name))
                     .reply_markup(update_task_status_button(&task.id, &torrent))).await?;
                 }
@@ -191,7 +190,7 @@ pub async fn process_magnet(api: &Api, pool: &Pool, message: &Message) -> Result
                 return Err(BotError::logic(err_message));
             }
             
-            let magnet_id = register_magnet(pool, user, &link.clone().short_link()).await?;
+            let magnet_id = register_magnet(pool, user, &link.clone().full_link()).await?;
             let mut keyboard = InlineKeyboardMarkup::new();
             for dir in dirs {
                 keyboard.add_row(vec![InlineKeyboardButton::callback(dir.alias,format!("download:{}:{}", &magnet_id, &dir.ordinal))]);
