@@ -14,13 +14,13 @@ use super::{
     },
     models:: {
         TelegramId,
-        ShortMagnet,
         DownloadDirectory,
         Server,
         DbUser
     },
     servers::servers_commands,
     directories::direcoties_commands,
+    magnet::MagnetLink
 };
 use log::*;
 use uuid::Uuid;
@@ -53,9 +53,17 @@ async fn get_server(api: &Api, pool: &Pool, user: &DbUser, chat_ref: &ChatRef) -
     }
 }
 
-fn update_task_status_button(task_id: &Uuid) -> InlineKeyboardMarkup {
+fn update_task_status_button(task_id: &Uuid, torrent: &Torrent) -> InlineKeyboardMarkup {
+    let percent = torrent.percent_done;
     let mut keyboard = InlineKeyboardMarkup::new();
-    keyboard.add_row(vec![InlineKeyboardButton::callback(task_commands::TASK_STATUS, format!("t_status:{}", &task_id))]);
+    match percent {
+        Some(ref value) if value == 1 => {
+            //TODO: remove torrent button
+        },
+        _ => {
+            keyboard.add_row(vec![InlineKeyboardButton::callback(task_commands::TASK_STATUS, format!("t_status:{}", &task_id))]);
+        }
+    }
     keyboard
 }
 
@@ -81,11 +89,11 @@ pub async fn start_download(api: &Api, pool: &Pool, user_id: &TelegramId, data: 
 
     match dir {
         Some(dir) => {
-            let short = ShortMagnet::from(&magnet.url).unwrap();
+            let magnet_link = MagnetLink::from(&magnet.url).unwrap();
             let task = add_task(pool, user, &server.id, &magnet.clone()).await?;
             let client: TransClient = server.to_client();
             match client.torrent_add(TorrentAddArgs{
-                filename: Some(short.into()),
+                filename: Some(magnet_link.short_link()),
                 download_dir: Some(dir.path),
                 ..TorrentAddArgs::default()
             }).await {
@@ -132,7 +140,7 @@ pub async fn update_task_status(api: &Api, pool: &Pool, user_id: &TelegramId, da
         _ => return Ok(())
     };
     
-    let short = ShortMagnet::from(&magnet.url).unwrap();
+    let short = MagnetLink::from(&magnet.url).unwrap();
     let hash = short.hash();
     let client: TransClient = server.to_client();
     match client.torrent_get(None, Some(vec![Id::Hash(hash.clone())])).await {
@@ -140,7 +148,7 @@ pub async fn update_task_status(api: &Api, pool: &Pool, user_id: &TelegramId, da
             let torrent = response.arguments.torrents.iter().next().unwrap();
             let name = torrent.name.as_ref().unwrap_or(&hash);
             api.send(message.edit_text(format!("{}\n{}", &name, torrent_status(torrent)))
-                .reply_markup(update_task_status_button(&task.id))).await?;
+                .reply_markup(update_task_status_button(&task.id, torrent))).await?;
         },
         _ => {
             api.send(message.edit_text(format!("{}\nTorrent was not found on the server!", &hash))).await?;
@@ -159,39 +167,45 @@ fn torrent_status(torrent: &Torrent) -> String {
     format!("{}{}[{}%]\nUpdated at: {}", filled, empty, percent, Utc::now().format("%d.%m.%Y %H:%M:%S"))
 }
 
-pub async fn process_magnet(api: Api, pool: &Pool, message: Message) -> Result<(), BotError> {
+pub async fn process_magnet(api: Api, pool: &Pool, message: &Message) -> Result<(), BotError> {
     let text = message.text().unwrap_or_default();
-    let magnet = ShortMagnet::find(&text);
+    let magnet = MagnetLink::find(&text);
     match magnet {
-        Some(short) => {
+        Some(link) => {
             let user = &get_user(pool, &message.from.id.into()).await?.unwrap();
             let server_count = get_servers_by_user_id(pool, user).await?.len();
             if server_count == 0 {
                 let mut keyboard = InlineKeyboardMarkup::new();
                 keyboard.add_row(vec![InlineKeyboardButton::callback(servers_commands::REGISTER_SERVER, servers_commands::REGISTER_SERVER)]);
-                api.send(message.to_source_chat().text("No Servers found! Please register one first!").reply_markup(keyboard)).await?;
-                return Ok(());
+                let err_message = "No Servers found! Please register one first!".to_owned();
+                api.send(message.to_source_chat().text(&err_message).reply_markup(keyboard)).await?;
+                return Err(BotError::logic(err_message));
             }
             
             let dirs: Vec<DownloadDirectory> = get_directories(pool, user).await?;
             if dirs.len() == 0 {
                 let mut keyboard = InlineKeyboardMarkup::new();
                 keyboard.add_row(vec![InlineKeyboardButton::callback(direcoties_commands::ADD_DIRECTORY, direcoties_commands::ADD_DIRECTORY)]);
-                api.send(message.to_source_chat().text("No Directories found! Please add one first!").reply_markup(keyboard)).await?;
-                return Ok(());
+                let err_message = "No Directories found! Please add one first!".to_owned();
+                api.send(message.to_source_chat().text(&err_message).reply_markup(keyboard)).await?;
+                return Err(BotError::logic(err_message));
             }
             
-            let magnet_id = register_magnet(pool, user, &short.into()).await?;
+            let magnet_id = register_magnet(pool, user, &link.clone().short_link()).await?;
             let mut keyboard = InlineKeyboardMarkup::new();
             for dir in dirs {
                 keyboard.add_row(vec![InlineKeyboardButton::callback(dir.alias,format!("download:{}:{}", &magnet_id, &dir.ordinal))]);
             }
-            api.send(message.text_reply("Choose directory to download").reply_markup(ReplyMarkup::InlineKeyboardMarkup(keyboard)))
-                .await?;    
+            keyboard.add_row(vec![InlineKeyboardButton::callback("Cancel","cancel")]);
+
+            api.send(message.to_source_chat().text(format!("{}\nChoose directory to download", link.dn()))
+                .reply_markup(ReplyMarkup::InlineKeyboardMarkup(keyboard))).await?;
         },
         None => {
-            error!("Couldn't parse magnet from text: {}", &text);
+            let err_message = format!("Couldn't parse magnet from text: {}", &text);
+            error!("{}", &err_message);
             api.send(message.text_reply("Sorry. Couldn't handle this magnet. Try later :(")).await?;
+            return Err(BotError::logic(err_message));
         }
     };
     Ok(())

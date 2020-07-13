@@ -57,7 +57,14 @@ async fn process_message(api: Api, pool: Pool, message: Message, last_command: &
         MessageKind::Text { ref data, .. } => match data.as_str() {
             "/start" => start_command(&api, &pool, message).await?,
             settings_commands::MENU => settings_menu(&api, message).await?,
-            _ if data.as_str().contains("magnet:") => process_magnet(api, &pool, message).await?,
+            _ if data.as_str().contains("magnet:") => {
+                match process_magnet(api, &pool, &message).await {
+                    Ok(_) => {
+                        let _ = message.delete();
+                    },
+                    _ => ()
+                }
+            },
             // step 2 messages
             _ if last_command.contains_key(user_id) => {
                 let result = match last_command.get(user_id).unwrap().as_str() {

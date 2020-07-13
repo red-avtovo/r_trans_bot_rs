@@ -12,12 +12,18 @@ impl BotError {
     pub(crate) fn new(kind: BotErrorKind) -> BotError {
         BotError(kind)
     }
+
+    pub(crate) fn logic(message: String) -> BotError {
+        BotError(BotErrorKind::BotLogic(message))
+    }
+
 }
 
 #[derive(Debug)]
 pub(crate) enum BotErrorKind{
     TelegramError(telegram_bot::Error),
     DbError(DbError),
+    BotLogic(String)
 }
 
 fromError!(telegram_bot::Error, BotError, BotErrorKind::TelegramError);
@@ -28,6 +34,7 @@ impl fmt::Display for BotError {
         match &self.0 {
             BotErrorKind::TelegramError(error) => write!(f, "{}", error),
             BotErrorKind::DbError(error) => write!(f, "{}", error),
+            BotErrorKind::BotLogic(error) => write!(f, "{}", error),
         }
     }
 }
