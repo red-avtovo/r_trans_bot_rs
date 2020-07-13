@@ -27,6 +27,7 @@ jobs:
 
   push-deploy:
     if: contains(github.event.pull_request.labels.*.name, 'deploy')
+    needs: build
     runs-on: ubuntu-latest
 
     steps:
