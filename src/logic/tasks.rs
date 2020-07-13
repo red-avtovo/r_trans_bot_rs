@@ -167,7 +167,7 @@ fn torrent_status(torrent: &Torrent) -> String {
     format!("{}{}[{}%]\nUpdated at: {}", filled, empty, percent, Utc::now().format("%d.%m.%Y %H:%M:%S"))
 }
 
-pub async fn process_magnet(api: Api, pool: &Pool, message: &Message) -> Result<(), BotError> {
+pub async fn process_magnet(api: &Api, pool: &Pool, message: &Message) -> Result<(), BotError> {
     let text = message.text().unwrap_or_default();
     let magnet = MagnetLink::find(&text);
     match magnet {

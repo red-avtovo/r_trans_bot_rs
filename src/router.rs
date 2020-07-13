@@ -58,11 +58,18 @@ async fn process_message(api: Api, pool: Pool, message: Message, last_command: &
             "/start" => start_command(&api, &pool, message).await?,
             settings_commands::MENU => settings_menu(&api, message).await?,
             _ if data.as_str().contains("magnet:") => {
-                match process_magnet(api, &pool, &message).await {
+                log::debug!("Processing a magnet link");
+                match process_magnet(&api, &pool, &message).await {
                     Ok(_) => {
-                        let _ = message.delete();
+                        log::debug!("Processing of a magnet link passed. Deleting the original message");
+                        match api.send(message.delete()).await {
+                            Ok(_) => log::debug!("Message was successfully deleted!"),
+                            _ => log::warn!("Unable to delete the original message!")
+                        }
                     },
-                    _ => ()
+                    _ => {
+                        log::warn!("Processing of a magnet link failed! The link was: {}", &data);
+                    }
                 }
             },
             // step 2 messages
