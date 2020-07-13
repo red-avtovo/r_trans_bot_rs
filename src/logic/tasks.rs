@@ -196,7 +196,7 @@ pub async fn process_magnet(api: &Api, pool: &Pool, message: &Message) -> Result
             for dir in dirs {
                 keyboard.add_row(vec![InlineKeyboardButton::callback(dir.alias,format!("download:{}:{}", &magnet_id, &dir.ordinal))]);
             }
-            keyboard.add_row(vec![InlineKeyboardButton::callback("Cancel","cancel")]);
+            keyboard.add_row(vec![InlineKeyboardButton::callback("-- Cancel --","cancel")]);
 
             api.send(message.to_source_chat().text(format!("{}\nChoose directory to download", link.dn()))
                 .reply_markup(ReplyMarkup::InlineKeyboardMarkup(keyboard))).await?;
