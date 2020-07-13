@@ -37,6 +37,8 @@ use chrono::prelude::*;
 
 pub mod task_commands {
     pub const TASK_STATUS: &str = "Update task status 👀";
+    pub const TASK_REMOVE: &str = "Delete torrent ❌";
+    pub const TASK_HIDE: &str = "Hide 🙈";
 }
 
 async fn get_server(api: &Api, pool: &Pool, user: &DbUser, chat_ref: &ChatRef) -> Option<Server> {
@@ -58,7 +60,8 @@ fn update_task_status_button(task_id: &Uuid, torrent: &Torrent) -> InlineKeyboar
     let mut keyboard = InlineKeyboardMarkup::new();
     match percent {
         Some(ref value) if value.to_owned() == 1.0_f32 => {
-            //TODO: remove torrent button
+            keyboard.add_row(vec![InlineKeyboardButton::callback(task_commands::TASK_REMOVE, format!("t_remove:{}", &task_id))]);
+            keyboard.add_row(vec![InlineKeyboardButton::callback(task_commands::TASK_HIDE, task_commands::TASK_HIDE)]);
         },
         _ => {
             keyboard.add_row(vec![InlineKeyboardButton::callback(task_commands::TASK_STATUS, format!("t_status:{}", &task_id))]);
@@ -159,6 +162,41 @@ pub async fn update_task_status(api: &Api, pool: &Pool, user_id: &TelegramId, da
             api.send(message.edit_text(format!("{}\nTorrent was not found on the server!", &hash))).await?;
         }
     }
+    Ok(())
+}
+
+pub async fn remove_task(api: &Api, pool: &Pool, user_id: &TelegramId, data: &str, message: &Message) -> Result<(), BotError> {
+    let data_parts: Vec<String> = data.split(":")
+        .map(|part| String::from(part))
+        .collect();
+    if data_parts.len()!=2 {
+        error!("Broken task removal callback received: {}", &data);
+        api.send(message.from.to_chat_ref().text("We messed up. Can't remove the task :(")).await?;
+        return Ok(())    
+    }
+    let task_id = Uuid::parse_str(data_parts[1].as_ref()).expect("Incorrect uuid received");
+    let user = &get_user(pool, user_id).await?.unwrap();
+    let task = get_task_by_id(pool, &task_id).await?.unwrap();
+    let server = match get_server(api, pool, user, &message.from.to_chat_ref()).await {
+        Some(server) => server,
+        None => return Ok(())
+    };
+    let magnet = match get_magnet_by_id(pool, user, task.magnet_id).await {
+        Ok(ref link) if link.is_some() => link.clone().unwrap(),
+        _ => return Ok(())
+    };
+
+    let link = MagnetLink::from(&magnet.url).unwrap();
+    let hash = link.clone().hash();
+    let client: TransClient = server.to_client();
+    match client.torrent_remove(vec![Id::Hash(hash.clone())], true).await {
+        Ok(_) => {
+            api.send(message.from.to_chat_ref().text(format!("Torrent\n{}\nwas removed!", &link.dn()))).await?;
+        },
+        _ => {
+            return Err(BotError::logic(format!("Failed to remove the torrent: {}", link.dn())))
+        }
+    };
     Ok(())
 }
 
