@@ -2,7 +2,11 @@ use serde::Serialize;
 use url::Url;
 use url::form_urlencoded;
 use crate::errors::MagnetMappingError;
-use percent_encoding::percent_decode_str;
+use percent_encoding::{
+    percent_decode_str,
+    utf8_percent_encode,
+    AsciiSet, CONTROLS
+};
 use log::*;
 
 #[derive(Debug, Clone, Serialize)]
@@ -11,6 +15,9 @@ pub struct MagnetLink {
     tr: Vec<String>,
     dn: String,
 }
+
+/// https://url.spec.whatwg.org/#fragment-percent-encode-set
+const FRAGMENT: &AsciiSet = &CONTROLS.add(b' ').add(b'"').add(b'<').add(b'>').add(b'`');
 
 impl MagnetLink {
     pub fn from(string: &String) -> Result<Self, MagnetMappingError> {
@@ -80,7 +87,8 @@ impl MagnetLink {
             &serializer.append_pair("tr", tr);
         });
         let tracker_params = serializer.finish();
-        format!("magnet:?dn={}&xt={}&{}", &self.dn, &self.xt, tracker_params)
+        let encoded_dn: String = utf8_percent_encode(&self.dn, FRAGMENT).collect();
+        format!("magnet:?xt={}&dn={}&{}", &self.xt, &encoded_dn, tracker_params)
     }
 }
 
@@ -100,9 +108,9 @@ mod test {
         let magnet = String::from("magnet:?xt=urn:btih:e249fe4dc957be4b4ce3ecaac280fdf1c71bc5bb&tr=http%3A%2F%2Fsometracker.com%2Fannounce&dn=ubuntu-mate-16.10-desktop-amd64.iso&tr=http%3A%2F%2Fsometracker.com%2Fannounce2");
         let urn = String::from("urn:btih:e249fe4dc957be4b4ce3ecaac280fdf1c71bc5bb");
         let trackers = vec![ "http://sometracker.com/announce".to_owned(), "http://sometracker.com/announce2".to_owned()];
-        let short = MagnetLink::from(&magnet).unwrap();
-        assert_eq!(short.clone().xt, urn);
-        assert_eq!(short.clone().tr, trackers);
+        let link = MagnetLink::from(&magnet).unwrap();
+        assert_eq!(link.clone().xt, urn);
+        assert_eq!(link.clone().tr, trackers);
     }
 
     #[test]
@@ -110,10 +118,10 @@ mod test {
         let magnet = &String::from("some info magnet:?xt=urn:btih:e249fe4dc957be4b4ce3ecaac280fdf1c71bc5bb&tr=http%3A%2F%2Fsometracker.com%2Fannounce&dn=ubuntu-mate-16.10-desktop-amd64.iso&tr=http%3A%2F%2Fsometracker.com%2Fannounce2 and some comment after");
         let urn = String::from("urn:btih:e249fe4dc957be4b4ce3ecaac280fdf1c71bc5bb");
         let trackers = vec![ "http://sometracker.com/announce".to_owned(), "http://sometracker.com/announce2".to_owned()];
-        let short = MagnetLink::find(magnet);
-        assert!(short.clone().is_some());
-        assert_eq!(short.clone().unwrap().xt, urn);
-        assert_eq!(short.clone().unwrap().tr, trackers);
+        let link = MagnetLink::find(magnet);
+        assert!(link.clone().is_some());
+        assert_eq!(link.clone().unwrap().xt, urn);
+        assert_eq!(link.clone().unwrap().tr, trackers);
     }
 
     #[test]
@@ -142,8 +150,8 @@ mod test {
         let hash = String::from("e249fe4dc957be4b4ce3ecaac280fdf1c71bc5bb");
         let urn = String::from("urn:btih:e249fe4dc957be4b4ce3ecaac280fdf1c71bc5bb");
         let trackers = vec![ "http://sometracker.com/announce".to_owned(), "http://sometracker.com/announce2".to_owned()];
-        let short = MagnetLink { xt: urn, tr: trackers, dn: "test".to_owned()};
-        let actual:String = short.hash();
+        let link = MagnetLink { xt: urn, tr: trackers, dn: "test".to_owned()};
+        let actual:String = link.hash();
         assert_eq!(actual, hash);
     }
 
@@ -167,5 +175,13 @@ mod test {
         let hash = String::from("e249fe4dc957be4b4ce3ecaac280fdf1c71bc5bb");
         let link = MagnetLink::find(magnet);
         assert_eq!(link.unwrap().dn(), hash)
+    }
+
+    #[test]
+    pub fn test_full_link_with_cirillic_dn() {
+        let text = &String::from("some info\nmagnet:?xt=urn:btih:e249fe4dc957be4b4ce3ecaac280fdf1c71bc5bb&tr=http%3A%2F%2Fsometracker.com%2Fannounce&dn=%D1%82%D0%B5%D1%81%D1%82&tr=http%3A%2F%2Fsometracker.com%2Fannounce2\nand some comment after");
+        let expected = &String::from("magnet:?xt=urn:btih:e249fe4dc957be4b4ce3ecaac280fdf1c71bc5bb&dn=%D1%82%D0%B5%D1%81%D1%82&tr=http%3A%2F%2Fsometracker.com%2Fannounce&tr=http%3A%2F%2Fsometracker.com%2Fannounce2");
+        let link = MagnetLink::find(text);
+        assert_eq!(expected, &link.unwrap().full_link())
     }
 }
