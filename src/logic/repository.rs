@@ -163,7 +163,7 @@ pub async fn add_task(pool: &Pool, user: &DbUser, server_id: &Uuid, magnet: &Mag
 
 pub(crate) async fn get_task_by_id(pool: &Pool, id: &Uuid) -> Result<Option<DownloadTask>, DbError> {
     let connection = pool.get().await?;
-    let query = "SELECT id, user_id, server_id, magnet_id, status,description FROM tasks WHERE id=$1;";
+    let query = "SELECT id, user_id, server_id, magnet_id, status, description FROM tasks WHERE id=$1;";
     let rows = connection.query(query, &[&id]).await?;
     match rows.get(0) {
         Some(row) => Ok(Some(DownloadTask::from_row(&row))),

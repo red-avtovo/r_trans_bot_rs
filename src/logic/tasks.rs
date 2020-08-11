@@ -104,7 +104,7 @@ pub async fn start_download(api: &Api, pool: &Pool, user_id: &TelegramId, data: 
                     let arguments: TorrentAdded = response.arguments;
                     let torrent = arguments.torrent_added;
                     let name: String = magnet_link.dn();
-                    api.send(chat_ref.text(format!("Downloading {}", &name))
+                    api.send(chat_ref.text(format!("Downloading {}\nto {}", &name, &dir.alias))
                     .reply_markup(update_task_status_button(&task.id, &torrent))).await?;
                 }
                 Err(_) => {
@@ -150,7 +150,8 @@ pub async fn update_task_status(api: &Api, pool: &Pool, user_id: &TelegramId, da
             match response.arguments.torrents.iter().next() {
                 Some(torrent) => {
                     let name = torrent.name.as_ref().unwrap_or(&hash);
-                    api.send(message.edit_text(format!("{}\n{}", &name, torrent_status(torrent)))
+                    let dir = get_directory(pool, user, dir_ordinal).await?;
+                    api.send(message.edit_text(format!("Downloading {}\nto {}\n{}", &name, torrent_status(torrent)))
                         .reply_markup(update_task_status_button(&task.id, torrent))).await?;
                 },
                 None => {
@@ -191,7 +192,7 @@ pub async fn remove_task(api: &Api, pool: &Pool, user_id: &TelegramId, data: &st
     let client: TransClient = server.to_client();
     match client.torrent_remove(vec![Id::Hash(hash.clone())], true).await {
         Ok(_) => {
-            api.send(message.from.to_chat_ref().text(format!("Torrent\n{}\nwas removed!", &link.dn()))).await?;
+            api.send(message.edit_text(format!("Torrent\n{}\nwas removed!", &link.dn()))).await?;
         },
         _ => {
             return Err(BotError::logic(format!("Failed to remove the torrent: {}", link.dn())))
