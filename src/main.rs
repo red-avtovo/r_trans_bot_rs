@@ -23,16 +23,13 @@ use log::{info, error};
 async fn main() -> Result<(), BotError> {
     dotenv().ok();
     env_logger::init();
-    let db_pool = match DbConfig::create().pool().await {
-        Ok(pool) => {
-            match test_connection(&pool.clone()).await {
-                Ok(_) => info!("Db Connection established!"),
-                Err(error) => error!("Db test failed: {:#?}", error)
-            }
-            pool
-        },
-        Err(e) => panic!("builder error: {:?}", e)
+    let pool = DbConfig::getPool();
+
+    match test_connection(&pool.clone()).await {
+        Ok(_) => info!("Db Connection established!"),
+        Err(error) => error!("Db test failed: {:#?}", error)
     };
+
     test_db_crypto();
 
     let token = env::var("TELEGRAM_BOT_TOKEN").expect("TELEGRAM_BOT_TOKEN not set");
@@ -41,7 +38,7 @@ async fn main() -> Result<(), BotError> {
     let mut stream = api.stream();
     while let Some(update) = stream.next().await {
         let update = update?;
-        router::route(api.clone(), &db_pool, update, &mut last_command).await;
+        router::route(api.clone(), &pool, update, &mut last_command).await;
     }
     Ok(())
 }

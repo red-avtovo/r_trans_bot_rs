@@ -1,12 +1,6 @@
-use bb8::{
-    self,
-    RunError
-};
-use bb8_postgres;
-use tokio_postgres::{
-    NoTls,
-    row::Row
-};
+use diesel::pg::PgConnection;
+use diesel::r2d2::ConnectionManager;
+
 use super::models::*;
 use crate::errors::DbError;
 use super::crypto::{
@@ -15,20 +9,19 @@ use super::crypto::{
 };
 use uuid::Uuid;
 
-pub type Pool = bb8::Pool<bb8_postgres::PostgresConnectionManager<NoTls>>;
-pub type PError = tokio_postgres::Error;
-pub type RError = RunError<PError>;
+pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
 use log::*;
 
 pub async fn test_connection(pool: &Pool) -> Result<(), DbError> {
-    let connection = pool.get().await?;
+    let connection = pool.get();
     let query = "SELECT 1;";
     connection.execute(query, &[]).await?;
     Ok(())
 }
 
 pub async fn save_user(pool: &Pool, user: DbUser) -> Result<DbUser, DbError> {
+    diesel::insert_into(target)
     let connection = pool.get().await?;
     let query = "INSERT INTO users(id, chat, first_name, last_name, username, salt) VALUES($1,$2,$3,$4,$5,$6);";
     let user_id = i64::from(user.id.clone());
@@ -338,6 +331,6 @@ pub(crate) async fn get_magnet_by_id(pool: &Pool, user: &DbUser, id: Uuid) -> Re
 
 //     #[test]
 //     pub fn test() {
-           
+
 //     }
 // }
