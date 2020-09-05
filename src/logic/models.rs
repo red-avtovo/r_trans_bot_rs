@@ -107,7 +107,7 @@ impl TransUrl {
 
 impl From<String> for TransUrl {
     fn from(url: String) -> Self {
-        TransUrl(url)    
+        TransUrl(url)
     }
 }
 

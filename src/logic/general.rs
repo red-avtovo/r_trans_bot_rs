@@ -3,7 +3,7 @@ use crate::errors::BotError;
 use super::{
     repository::{
         get_user,
-        save_user, 
+        save_user,
         Pool
     },
     models::{

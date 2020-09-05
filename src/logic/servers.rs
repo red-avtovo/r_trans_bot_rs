@@ -150,5 +150,4 @@ async fn add_a_server(pool: &Pool, user: &DbUser, server: &Server) -> Result<Ser
         Some(auth) => add_server_auth(pool, user, &server.url.get_base_url(), &auth.username, &auth.password).await,
         None => add_server(pool, &user, &server.url.get_base_url()).await
     }.map_err(BotError::from)
-    
 }

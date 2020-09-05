@@ -52,7 +52,7 @@ impl MagnetMappingError {
         MagnetMappingError(str)
     }
 }
-    
+
 impl fmt::Display for MagnetMappingError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Magnet Mapping error: {}", self.0)

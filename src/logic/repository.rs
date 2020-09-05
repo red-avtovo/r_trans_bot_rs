@@ -60,7 +60,6 @@ pub async fn get_user(pool: &Pool, id: &TelegramId) -> Result<Option<DbUser>, Db
         },
         None => Ok(None)
     }
-    
 }
 
 // DIRECTORIES
@@ -226,7 +225,7 @@ fn init_crypto(user: &DbUser) -> Crypto {
 
 fn init_salty_crypto(salt: String) -> Crypto {
     Crypto::new(
-        std::env::var("SECRET").expect("SECRET is not set"), 
+        std::env::var("SECRET").expect("SECRET is not set"),
         salt
     )
     .expect("All keys should be valid since the system sets them up")
@@ -238,9 +237,9 @@ impl Server {
         let crypto = init_crypto(user);
         let username: String = row.get(3);
         let enc_password: String = row.get(4);
-        let auth = if username.is_empty() || enc_password.is_empty() { 
-            None 
-        } else { 
+        let auth = if username.is_empty() || enc_password.is_empty() {
+            None
+        } else {
             let password = crypto.decrypt(&enc_password);
             Some(Authentication{ username, password})
         };

@@ -38,14 +38,14 @@ impl ErrorHandler for Result<(), BotError> {
     async fn handle_error(&self, api: &Api, chat_ref: &ChatRef) {
         match &self {
             Ok(_) => {},
-            Err(error) => { 
+            Err(error) => {
                 error!("Error while handling the message: {}", error);
                 match api.send(&chat_ref.text("Something went wrong :(")).await {
                     Ok(_) => {}
                     Err(_) => {
                         error!("Unable to send generic error message");
                     },
-                }; 
+                };
             }
         };
     }
@@ -95,7 +95,7 @@ async fn process_callback(api: Api, pool: &Pool, callback_query: CallbackQuery, 
     api.send(callback_query.acknowledge()).await?;
     let user_id = &TelegramId::from(callback_query.from.id);
     let chat_ref = &callback_query.from.to_chat_ref();
-    let data = callback_query.data.clone(); 
+    let data = callback_query.data.clone();
     match data {
         // download:magnet_uuid:directory_ordinal (1-64 bytes)
         Some(ref value) if value.starts_with("download:") => start_download(&api, pool, user_id,value, chat_ref).await?,
@@ -106,7 +106,7 @@ async fn process_callback(api: Api, pool: &Pool, callback_query: CallbackQuery, 
         // static commands
         Some(ref data_string) => match data_string.as_str() {
             direcoties_commands::LIST_DIRECTORIES => list_directories(&api, pool, user_id, chat_ref).await?,
-            direcoties_commands::ADD_DIRECTORY => { 
+            direcoties_commands::ADD_DIRECTORY => {
                 add_directory_prepare(&api, &chat_ref).await?;
                 last_command.insert(user_id.to_owned(), direcoties_commands::ADD_DIRECTORY.to_owned());
             },
