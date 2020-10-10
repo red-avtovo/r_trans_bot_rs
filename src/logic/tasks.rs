@@ -150,8 +150,8 @@ pub async fn update_task_status(api: &Api, pool: &Pool, user_id: &TelegramId, da
             match response.arguments.torrents.iter().next() {
                 Some(torrent) => {
                     let name = torrent.name.as_ref().unwrap_or(&hash);
-                    let dir = get_directory(pool, user, dir_ordinal).await?;
-                    api.send(message.edit_text(format!("Downloading {}\nto {}\n{}", &name, torrent_status(torrent)))
+                    //let dir = get_directory(pool, user).await?;
+                    api.send(message.edit_text(format!("Downloading {}\n{}", &name, torrent_status(torrent)))
                         .reply_markup(update_task_status_button(&task.id, torrent))).await?;
                 },
                 None => {
