@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use telegram_bot::*;
 use crate::errors::BotError;
 use crate::logic::{
-    models::TelegramId,
     general::*,
     directories::*,
     servers::*,
@@ -12,7 +11,7 @@ use crate::logic::{
 use async_trait::async_trait;
 use log::*;
 
-pub async fn route(api: Api, pool: &Pool, update: Update, mut last_command: &mut HashMap<TelegramId, String>) {
+pub async fn route(api: Api, pool: &Pool, update: Update, mut last_command: &mut HashMap<i64, String>) {
     match update.kind {
         UpdateKind::Message(ref message) => { process_message(api.clone(), pool.clone(), message.clone(), &mut last_command)
             .await
@@ -51,8 +50,8 @@ impl ErrorHandler for Result<(), BotError> {
     }
 }
 
-async fn process_message(api: Api, pool: Pool, message: Message, last_command: &mut HashMap<TelegramId, String>) -> Result<(), BotError> {
-    let user_id = &TelegramId::from(message.from.id);
+async fn process_message(api: Api, pool: Pool, message: Message, last_command: &mut HashMap<i64, String>) -> Result<(), BotError> {
+    let user_id: &i64 = &message.from.id.into();
     match message.kind {
         MessageKind::Text { ref data, .. } => match data.as_str() {
             "/start" => start_command(&api, &pool, message).await?,
@@ -91,9 +90,9 @@ async fn process_message(api: Api, pool: Pool, message: Message, last_command: &
     Ok(())
 }
 
-async fn process_callback(api: Api, pool: &Pool, callback_query: CallbackQuery, last_command: &mut HashMap<TelegramId, String>) -> Result<(), BotError> {
+async fn process_callback(api: Api, pool: &Pool, callback_query: CallbackQuery, last_command: &mut HashMap<i64, String>) -> Result<(), BotError> {
     api.send(callback_query.acknowledge()).await?;
-    let user_id = &TelegramId::from(callback_query.from.id);
+    let user_id: &i64 = &callback_query.from.id.into();
     let chat_ref = &callback_query.from.to_chat_ref();
     let data = callback_query.data.clone();
     match data {

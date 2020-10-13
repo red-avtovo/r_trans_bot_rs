@@ -12,20 +12,8 @@ table! {
 table! {
     magnets (id) {
         id -> Uuid,
-        user_id -> Nullable<Int8>,
+        user_id -> Int8,
         url -> Varchar,
-        created_at -> Nullable<Timestamptz>,
-    }
-}
-
-table! {
-    r_users (id) {
-        id -> Int8,
-        chat -> Int8,
-        first_name -> Varchar,
-        last_name -> Nullable<Varchar>,
-        username -> Nullable<Varchar>,
-        salt -> Varchar,
         created_at -> Nullable<Timestamptz>,
     }
 }
@@ -33,7 +21,7 @@ table! {
 table! {
     servers (id) {
         id -> Uuid,
-        user_id -> Nullable<Int8>,
+        user_id -> Int8,
         url -> Varchar,
         username -> Nullable<Varchar>,
         password -> Nullable<Varchar>,
@@ -47,7 +35,7 @@ table! {
         user_id -> Int8,
         server_id -> Uuid,
         magnet_id -> Uuid,
-        status -> Task_status,
+        status -> Varchar,
         description -> Nullable<Text>,
         created_at -> Nullable<Timestamptz>,
     }
@@ -75,7 +63,6 @@ joinable!(tasks -> users (user_id));
 allow_tables_to_appear_in_same_query!(
     dirs,
     magnets,
-    r_users,
     servers,
     tasks,
     users,

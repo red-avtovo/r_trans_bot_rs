@@ -13,10 +13,9 @@ use super::{
         get_task_by_id,
     },
     models:: {
-        TelegramId,
         DownloadDirectory,
         Server,
-        DbUser
+        User
     },
     servers::servers_commands,
     directories::direcoties_commands,
@@ -41,7 +40,7 @@ pub mod task_commands {
     pub const TASK_HIDE: &str = "Hide 🙈";
 }
 
-async fn get_server(api: &Api, pool: &Pool, user: &DbUser, chat_ref: &ChatRef) -> Option<Server> {
+async fn get_server(api: &Api, pool: &Pool, user: &User, chat_ref: &ChatRef) -> Option<Server> {
     let servers = get_servers_by_user_id(pool, user).await;
     match servers {
         Ok(ref servers) if servers.len() == 0 => {
@@ -70,7 +69,7 @@ fn update_task_status_button(task_id: &Uuid, torrent: &Torrent) -> InlineKeyboar
     keyboard
 }
 
-pub async fn start_download(api: &Api, pool: &Pool, user_id: &TelegramId, data: &str, chat_ref: &ChatRef) -> Result<(), BotError> {
+pub async fn start_download(api: &Api, pool: &Pool, user_id: &i64, data: &str, chat_ref: &ChatRef) -> Result<(), BotError> {
     let data_parts: Vec<String> = data.split(":")
         .map(|part| String::from(part))
         .collect();
@@ -121,7 +120,7 @@ pub async fn start_download(api: &Api, pool: &Pool, user_id: &TelegramId, data: 
     Ok(())
 }
 
-pub async fn update_task_status(api: &Api, pool: &Pool, user_id: &TelegramId, data: &str, message: &Message) -> Result<(), BotError> {
+pub async fn update_task_status(api: &Api, pool: &Pool, user_id: &i64, data: &str, message: &Message) -> Result<(), BotError> {
     let data_parts: Vec<String> = data.split(":")
         .map(|part| String::from(part))
         .collect();
@@ -165,7 +164,7 @@ pub async fn update_task_status(api: &Api, pool: &Pool, user_id: &TelegramId, da
     Ok(())
 }
 
-pub async fn remove_task(api: &Api, pool: &Pool, user_id: &TelegramId, data: &str, message: &Message) -> Result<(), BotError> {
+pub async fn remove_task(api: &Api, pool: &Pool, user_id: &i64, data: &str, message: &Message) -> Result<(), BotError> {
     let data_parts: Vec<String> = data.split(":")
         .map(|part| String::from(part))
         .collect();

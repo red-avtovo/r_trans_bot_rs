@@ -1,6 +1,8 @@
-use crate::logic::repository::{RError, PError};
 use std::{fmt,error};
-use crate::fromError;
+use crate::{
+    fromError,
+    fromErrorString
+};
 
 /// ***************
 /// Bot Errors
@@ -13,6 +15,7 @@ impl BotError {
         BotError(kind)
     }
 
+    #[allow(dead_code)]
     pub(crate) fn logic(message: String) -> BotError {
         BotError(BotErrorKind::BotLogic(message))
     }
@@ -28,6 +31,11 @@ pub(crate) enum BotErrorKind{
 
 fromError!(telegram_bot::Error, BotError, BotErrorKind::TelegramError);
 fromError!(DbError, BotError, BotErrorKind::DbError);
+
+fromError!(r2d2::Error, BotError, BotErrorKind::DbError);
+fromErrorString!(r2d2::Error, DbError, DbErrorKind::Connection);
+fromErrorString!(diesel::result::Error, DbError, DbErrorKind::Execution);
+fromErrorString!(String, DbError, DbErrorKind::Execution);
 
 impl fmt::Display for BotError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -48,6 +56,7 @@ impl std::error::Error for BotError{}
 pub struct MagnetMappingError(&'static str);
 
 impl MagnetMappingError {
+    #[allow(dead_code)]
     pub(crate) fn new(str: &'static str) -> Self {
         MagnetMappingError(str)
     }
@@ -72,8 +81,8 @@ impl error::Error for MagnetMappingError {
 /// ***************
 #[derive(Debug)]
 pub(crate) enum DbErrorKind {
-    PostgresError(PError),
-    RuntimePostgresError(RError),
+    Connection(String),
+    Execution(String)
 }
 
 #[derive(Debug)]
@@ -85,14 +94,11 @@ impl DbError {
     }
 }
 
-fromError!(PError, DbError, DbErrorKind::PostgresError);
-fromError!(RError, DbError, DbErrorKind::RuntimePostgresError);
-
 impl fmt::Display for DbError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.0 {
-            DbErrorKind::PostgresError(error) => write!(f, "{}", error),
-            DbErrorKind::RuntimePostgresError(error) => write!(f, "{}", error),
+            DbErrorKind::Connection(error) => write!(f, "{}", error),
+            DbErrorKind::Execution(error) => write!(f, "{}", error),
         }
     }
 }
@@ -106,8 +112,36 @@ macro_rules! fromError {
     ) => {
         impl From<$from> for $error {
             fn from(error: $from) -> Self {
-                <$error>::new($kind(error))
+                <$error>::new($kind(error.into()))
             }
         }
     };
+}
+
+#[macro_export]
+macro_rules! fromErrorString {
+    (
+        $from: ty,
+        $error: ty,
+        $kind: path
+    ) => {
+        impl From<$from> for $error {
+            fn from(error: $from) -> Self {
+                <$error>::new($kind(format!("{}", error)))
+            }
+        }
+    };
+}
+
+#[cfg(test)]
+#[allow(dead_code, non_snake_case)]
+mod test {
+
+    use super::*;
+
+    //compilation test
+    fn r2d2_BotError(e: r2d2::Error) -> BotError { e.into() }
+    fn r2d2_DbError(e: r2d2::Error) -> DbError { e.into() }
+    fn diesel_result_ErrorDbError(e: diesel::result::Error) -> DbError { e.into() }
+    fn string_DbError(e: String) -> DbError { e.into() }
 }
