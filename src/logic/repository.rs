@@ -131,7 +131,7 @@ pub(crate) async fn get_task_by_id(pool: &Pool, id: &Uuid) -> Result<Option<Down
 
 pub(crate) async fn get_tasks_by_server_id(pool: &Pool, id: &Uuid) -> Result<Vec<DownloadTask>, DbError> {
     let connection = pool.get()?;
-    Ok(tasks::table.filter(tasks::id.eq(id))
+    Ok(tasks::table.filter(tasks::server_id.eq(id))
         .load::<DownloadTask>(&connection)?)
 }
 
@@ -139,7 +139,7 @@ pub(crate) async fn tasks_count_by_server_id(pool: &Pool, id: &Uuid) -> Result<i
     let connection = pool.get()?;
     Ok(tasks::table
         .select(diesel::dsl::count(tasks::id))
-        .filter(tasks::id.eq(id))
+        .filter(tasks::server_id.eq(id))
         .count()
         .first::<i64>(&connection)?)
 }
