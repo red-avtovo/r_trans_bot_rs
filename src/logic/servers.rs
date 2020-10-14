@@ -10,7 +10,7 @@ use super::{
     repository::{
         get_user,
         get_servers_by_user_id,
-        get_task_by_server_id,
+        tasks_count_by_server_id,
         delete_servers,
         add_server,
         add_server_auth,
@@ -39,7 +39,7 @@ pub async fn show_stats(api: &Api, pool: &Pool, user_id: &i64, chat_ref: &ChatRe
     // for now it is just one
     match servers.get(0) {
         Some(server) => {
-            let tasks = get_task_by_server_id(&pool, &server.id).await?.len();
+            let tasks = tasks_count_by_server_id(&pool, &server.id).await?;
             stat_lines.push(format!("<b>{}</b>: <i>{}</i>", server.url().get_base_url(), tasks));
             let client = &server.to_client();
             let status = match client.session_get().await {
