@@ -6,10 +6,7 @@ metadata:
   labels:
     app: rtrans_bot
 data:
-  DB_HOST: "postgres.db"
-  DB_PORT: "5432"
-  DB_USER_NAME: "rtrans_user"
-  DB_NAME: "rtrans"
+  RUST_LOG: info
 
 ---
 apiVersion: apps/v1
