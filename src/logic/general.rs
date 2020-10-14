@@ -3,12 +3,11 @@ use crate::errors::BotError;
 use super::{
     repository::{
         get_user,
-        save_user, 
+        save_user,
         Pool
     },
     models::{
-        DbUser,
-        TelegramId
+        NewUser,
     },
     crypto::random_salt,
     directories::direcoties_commands,
@@ -30,7 +29,7 @@ pub async fn start_command(api: &Api, pool: &Pool, message: Message) -> Result<(
     ]);
     keyboard.resize_keyboard();
     debug!("Checking if user already exist");
-    match get_user(pool, &TelegramId::from(m_clone.from.id)).await {
+    match get_user(pool, &m_clone.from.id.into()).await {
         Ok(result) => {
             match result {
                 Some(_) => {
@@ -39,7 +38,7 @@ pub async fn start_command(api: &Api, pool: &Pool, message: Message) -> Result<(
                 },
                 None => {
                     debug!("Registering new user");
-                    let user=  DbUser {
+                    let user=  NewUser {
                         id: m_clone.from.id.into(),
                         chat: m_clone.chat.id().into(),
                         first_name: m_clone.from.first_name,

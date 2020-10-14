@@ -1,7 +1,6 @@
 use telegram_bot::*;
 use crate::errors::BotError;
 use super::models::{
-    TelegramId,
     DownloadDirectory
 };
 use super::repository::{
@@ -18,7 +17,7 @@ pub mod direcoties_commands {
     pub const RESET_DIRECTORIES: &str = "Reset Directories 📂❌";
 }
 
-pub async fn list_directories(api: &Api, pool: &Pool, user_id: &TelegramId, chat_ref: &ChatRef) -> Result<(), BotError> {
+pub async fn list_directories(api: &Api, pool: &Pool, user_id: &i64, chat_ref: &ChatRef) -> Result<(), BotError> {
     let user = &get_user(pool, user_id).await?.unwrap();
     let dirs: Vec<DownloadDirectory> = get_directories(pool, user).await?;
     let mut keyboard = InlineKeyboardMarkup::new();
@@ -43,7 +42,7 @@ pub async fn add_directory_prepare(api: &Api, chat_ref: &ChatRef) -> Result<(), 
     Ok(())
 }
 
-pub async fn add_directory_perform(api: &Api, pool: &Pool, user_id: &TelegramId, message: &Message) -> Result<bool, BotError> {
+pub async fn add_directory_perform(api: &Api, pool: &Pool, user_id: &i64, message: &Message) -> Result<bool, BotError> {
     let user = get_user(pool, user_id).await?.unwrap();
     let mut keyboard = InlineKeyboardMarkup::new();
     keyboard.add_row(vec![InlineKeyboardButton::callback(direcoties_commands::LIST_DIRECTORIES, direcoties_commands::LIST_DIRECTORIES)]);
@@ -67,7 +66,7 @@ pub async fn add_directory_perform(api: &Api, pool: &Pool, user_id: &TelegramId,
     }
 }
 
-pub async fn reset_directories(api: &Api, pool: &Pool, user_id: &TelegramId, chat_ref: &ChatRef) -> Result<(), BotError> {
+pub async fn reset_directories(api: &Api, pool: &Pool, user_id: &i64, chat_ref: &ChatRef) -> Result<(), BotError> {
     let user = get_user(pool, user_id).await?.unwrap();
     delete_directories(pool, user).await?;
     api.send(chat_ref.text("Done!")).await?;

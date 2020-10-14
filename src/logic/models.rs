@@ -1,32 +1,31 @@
-use telegram_bot_raw::types::refs::UserId;
 use postgres_types::{ToSql, FromSql};
 use uuid::Uuid;
+use chrono::NaiveDateTime;
+use super::trans_url::TransUrl;
 
-#[derive(Debug, ToSql, FromSql, Clone, PartialEq, Eq, Hash)]
-pub struct TelegramId(i64);
+use crate::schema::{
+    users,
+    dirs,
+    tasks,
+    servers,
+    magnets,
+};
 
-impl From<i64> for TelegramId {
-    fn from(id: i64) -> Self {
-        TelegramId(id)
-    }
+#[derive(Queryable, Clone, Debug)]
+pub struct User {
+    pub id: i64,
+    pub chat: i64,
+    pub first_name: String,
+    pub last_name: Option<String>,
+    pub username: Option<String>,
+    pub salt: String,
+    pub created_at: Option<NaiveDateTime>,
 }
 
-impl From<TelegramId> for i64 {
-    fn from(id: TelegramId) -> Self {
-        id.0
-    }
-}
-
-impl From<UserId> for TelegramId {
-    fn from(id: UserId) -> Self {
-        let a: i64 = id.into();
-        TelegramId(a)
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct DbUser {
-    pub id: TelegramId,
+#[derive(Insertable, Clone)]
+#[table_name = "users"]
+pub struct NewUser {
+    pub id: i64,
     pub chat: i64,
     pub first_name: String,
     pub last_name: Option<String>,
@@ -34,23 +33,180 @@ pub struct DbUser {
     pub salt: String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Queryable, Clone, Debug)]
 pub struct DownloadDirectory {
     pub id: Uuid,
-    pub user_id: TelegramId,
-    pub ordinal: i32,
+    pub user_id: i64,
     pub alias: String,
-    pub path: String
+    pub path: String,
+    pub ordinal: i32,
+    pub created_at: Option<NaiveDateTime>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Insertable)]
+#[table_name = "dirs"]
+pub struct NewDownloadDirectory {
+    id: Uuid,
+    user_id: i64,
+    alias: String,
+    path: String,
+    ordinal: i32,
+}
+
+impl NewDownloadDirectory {
+    pub fn new( user_id: i64,
+            alias: String,
+            path: String,
+            ordinal: i32,) -> Self {
+            NewDownloadDirectory {
+                id: Uuid::new_v4(),
+                user_id,
+                alias,
+                path,
+                ordinal,
+            }
+        }
+}
+
+#[derive(Queryable, Clone, Debug)]
 pub struct DownloadTask {
     pub id: Uuid,
-    pub user_id: TelegramId,
+    pub user_id: i64,
     pub server_id: Uuid,
     pub magnet_id: Uuid,
-    pub status: TaskStatus,
+    pub status: String,
     pub description: Option<String>,
+    pub created_at: Option<NaiveDateTime>,
+}
+
+impl DownloadTask {
+    #[allow(dead_code)]
+    pub fn status(self: &Self) -> TaskStatus {
+        TaskStatus::from(self.status.clone())
+    }
+}
+
+#[derive(Insertable)]
+#[table_name = "tasks"]
+pub struct NewDownloadTask {
+    id: Uuid,
+    user_id: i64,
+    server_id: Uuid,
+    magnet_id: Uuid,
+    status: String,
+    description: Option<String>,
+}
+
+impl NewDownloadTask {
+    pub fn new( user_id: i64,
+            server_id: Uuid,
+            magnet_id: Uuid,
+            status: String,
+            description: Option<String>,) -> Self {
+        NewDownloadTask{
+            id: Uuid::new_v4(),
+            user_id,
+            server_id,
+            magnet_id,
+            status,
+            description,
+        }
+    }
+}
+
+#[derive(Queryable, Clone, Debug)]
+pub struct Server {
+    pub id: Uuid,
+    pub user_id: i64,
+    pub(crate) url: String,
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub created_at: Option<NaiveDateTime>,
+}
+
+impl Server {
+    pub fn url(self: &Self) -> TransUrl {
+        TransUrl::from(self.url.clone())
+    }
+
+    pub fn auth(self: &Self) -> Option<Authentication> {
+        self.username.clone().map(|u| {
+            self.password.clone().map(|p| Authentication{
+                username: u,
+                password: p,
+            })
+        }).flatten()
+    }
+}
+
+#[derive(Insertable)]
+#[table_name = "servers"]
+pub struct NewServer {
+    id: Uuid,
+    user_id: i64,
+    url: String,
+    username: Option<String>,
+    password: Option<String>,
+}
+
+impl NewServer {
+    pub fn url(self: &Self) -> TransUrl {
+        TransUrl::from(self.url.clone())
+    }
+
+    pub fn auth(self: &Self) -> Option<Authentication> {
+        self.username.clone().map(|u| {
+            self.password.clone().map(|p| Authentication{
+                username: u,
+                password: p,
+            })
+        }).flatten()
+    }
+}
+
+impl NewServer {
+    pub fn new(
+        user_id: i64,
+        url: String,
+        auth: Option<Authentication>
+    ) -> Self {
+        let username = auth.clone().map(|a| a.username);
+        let password = auth.map(|a| a.password);
+        NewServer {
+            id: Uuid::new_v4(),
+            user_id,
+            url,
+            username,
+            password,
+        }
+    }
+}
+
+#[derive(Queryable, Clone, Debug)]
+pub struct Magnet {
+    pub id: Uuid,
+    pub user_id: i64,
+    pub url: String,
+    pub created_at: Option<NaiveDateTime>,
+}
+
+#[derive(Insertable)]
+#[table_name = "magnets"]
+pub struct NewMagnet {
+    id: Uuid,
+    user_id: i64,
+    url: String,
+}
+
+impl NewMagnet {
+    pub fn new( user_id: i64,
+            url: String,) -> Self {
+            NewMagnet{
+                id: Uuid::new_v4(),
+                user_id,
+                url,
+            }
+        }
 }
 
 #[derive(Debug, Clone)]
@@ -59,72 +215,40 @@ pub struct Authentication {
     pub password: String,
 }
 
-#[derive(Debug, Clone)]
-pub struct Server {
-    pub id: Uuid,
-    pub user_id: TelegramId,
-    pub(crate) url: TransUrl,
-    pub auth: Option<Authentication>,
-}
-
 #[derive(Debug, ToSql, FromSql, Clone)]
-#[postgres(name = "task_status")]
 pub enum TaskStatus{
-    #[postgres(name = "created")]
     Created,
-    #[postgres(name = "started")]
     Started,
-    #[postgres(name = "finished")]
     Finished,
-    #[postgres(name = "error")]
     Error
 }
 
-#[derive(Debug, Clone)]
-pub struct Magnet {
-    pub id: Uuid,
-    pub user_id: TelegramId,
-    pub url: String,
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct TransUrl(String);
-
-impl TransUrl {
-    pub fn from_web_url(url: &String) -> Option<Self> {
-        let lowercased_url = url.clone().to_lowercase();
-        let base_url = lowercased_url.split("/transmission/web").into_iter().next();
-        base_url.map(|url| TransUrl(url.to_owned()))
-    }
-    pub fn to_rpc_url(&self) -> String {
-        self.0.clone()+"/transmission/rpc"
-    }
-
-    pub(crate) fn get_base_url(&self) -> String {
-        self.0.clone()
+impl From<diesel::sql_types::Text> for TaskStatus {
+    fn from(text: diesel::sql_types::Text) -> Self {
+        let s = text.into();
+        s
     }
 }
 
-impl From<String> for TransUrl {
-    fn from(url: String) -> Self {
-        TransUrl(url)    
+impl From<String> for TaskStatus {
+    fn from(str: String) -> Self {
+        match str.as_ref() {
+            "created" => TaskStatus::Created,
+            "started" => TaskStatus::Started,
+            "finished" => TaskStatus::Finished,
+            "error" => TaskStatus::Error,
+            _  => panic!()
+        }
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_trans_url_rpc_generation() {
-        let url = TransUrl("http://localhost".to_owned());
-        assert_eq!("http://localhost/transmission/rpc", url.to_rpc_url())
-    }
-
-    #[test]
-    fn test_trans_url_web_parsing() {
-        let full_url = "http://localhost:9091/transmission/web/#confirm".to_owned();
-        let t = TransUrl::from_web_url(&full_url).unwrap();
-        assert_eq!("http://localhost:9091", t.get_base_url());
+impl ToString for TaskStatus {
+    fn to_string(&self) -> String {
+        match self {
+            TaskStatus::Created => "created",
+            TaskStatus::Started => "started",
+            TaskStatus::Finished => "finished",
+            TaskStatus::Error => "error",
+        }.to_owned()
     }
 }

@@ -13,10 +13,9 @@ use super::{
         get_task_by_id,
     },
     models:: {
-        TelegramId,
         DownloadDirectory,
         Server,
-        DbUser
+        User
     },
     servers::servers_commands,
     directories::direcoties_commands,
@@ -41,7 +40,7 @@ pub mod task_commands {
     pub const TASK_HIDE: &str = "Hide 🙈";
 }
 
-async fn get_server(api: &Api, pool: &Pool, user: &DbUser, chat_ref: &ChatRef) -> Option<Server> {
+async fn get_server(api: &Api, pool: &Pool, user: &User, chat_ref: &ChatRef) -> Option<Server> {
     let servers = get_servers_by_user_id(pool, user).await;
     match servers {
         Ok(ref servers) if servers.len() == 0 => {
@@ -70,21 +69,21 @@ fn update_task_status_button(task_id: &Uuid, torrent: &Torrent) -> InlineKeyboar
     keyboard
 }
 
-pub async fn start_download(api: &Api, pool: &Pool, user_id: &TelegramId, data: &str, chat_ref: &ChatRef) -> Result<(), BotError> {
+pub async fn start_download(api: &Api, pool: &Pool, user_id: &i64, data: &str, chat_ref: &ChatRef) -> Result<(), BotError> {
     let data_parts: Vec<String> = data.split(":")
         .map(|part| String::from(part))
         .collect();
     if data_parts.len()!=3 {
         error!("Broken download callback received: {}", &data);
         api.send(chat_ref.text("We messed up. Can't start donwloading :(")).await?;
-        return Ok(())    
+        return Ok(())
     }
     let magnet_id = Uuid::parse_str(data_parts[1].as_ref()).expect("Incorrect uuid received");
     let dir_ordinal = data_parts[2].parse::<i32>().unwrap();
     let user = &get_user(pool, user_id).await?.unwrap();
     let magnet = get_magnet_by_id(pool, user, magnet_id).await?.unwrap();
     let dir = get_directory(pool, user, dir_ordinal).await?;
-    
+
     let server = match get_server(api, pool, user, chat_ref).await {
         Some(server) => server,
         None => return Ok(())
@@ -121,14 +120,14 @@ pub async fn start_download(api: &Api, pool: &Pool, user_id: &TelegramId, data: 
     Ok(())
 }
 
-pub async fn update_task_status(api: &Api, pool: &Pool, user_id: &TelegramId, data: &str, message: &Message) -> Result<(), BotError> {
+pub async fn update_task_status(api: &Api, pool: &Pool, user_id: &i64, data: &str, message: &Message) -> Result<(), BotError> {
     let data_parts: Vec<String> = data.split(":")
         .map(|part| String::from(part))
         .collect();
     if data_parts.len()!=2 {
         error!("Broken task status callback received: {}", &data);
         api.send(message.from.to_chat_ref().text("We messed up. Can't check the status :(")).await?;
-        return Ok(())    
+        return Ok(())
     }
     let task_id = Uuid::parse_str(data_parts[1].as_ref()).expect("Incorrect uuid received");
     let user = &get_user(pool, user_id).await?.unwrap();
@@ -141,7 +140,7 @@ pub async fn update_task_status(api: &Api, pool: &Pool, user_id: &TelegramId, da
         Ok(ref link) if link.is_some() => link.clone().unwrap(),
         _ => return Ok(())
     };
-    
+
     let link = MagnetLink::from(&magnet.url).unwrap();
     let hash = link.clone().hash();
     let client: TransClient = server.to_client();
@@ -150,7 +149,6 @@ pub async fn update_task_status(api: &Api, pool: &Pool, user_id: &TelegramId, da
             match response.arguments.torrents.iter().next() {
                 Some(torrent) => {
                     let name = torrent.name.as_ref().unwrap_or(&hash);
-                    //let dir = get_directory(pool, user).await?;
                     api.send(message.edit_text(format!("Downloading {}\n{}", &name, torrent_status(torrent)))
                         .reply_markup(update_task_status_button(&task.id, torrent))).await?;
                 },
@@ -166,14 +164,14 @@ pub async fn update_task_status(api: &Api, pool: &Pool, user_id: &TelegramId, da
     Ok(())
 }
 
-pub async fn remove_task(api: &Api, pool: &Pool, user_id: &TelegramId, data: &str, message: &Message) -> Result<(), BotError> {
+pub async fn remove_task(api: &Api, pool: &Pool, user_id: &i64, data: &str, message: &Message) -> Result<(), BotError> {
     let data_parts: Vec<String> = data.split(":")
         .map(|part| String::from(part))
         .collect();
     if data_parts.len()!=2 {
         error!("Broken task removal callback received: {}", &data);
         api.send(message.from.to_chat_ref().text("We messed up. Can't remove the task :(")).await?;
-        return Ok(())    
+        return Ok(())
     }
     let task_id = Uuid::parse_str(data_parts[1].as_ref()).expect("Incorrect uuid received");
     let user = &get_user(pool, user_id).await?.unwrap();
@@ -225,7 +223,7 @@ pub async fn process_magnet(api: &Api, pool: &Pool, message: &Message) -> Result
                 api.send(message.to_source_chat().text(&err_message).reply_markup(keyboard)).await?;
                 return Err(BotError::logic(err_message));
             }
-            
+
             let dirs: Vec<DownloadDirectory> = get_directories(pool, user).await?;
             if dirs.len() == 0 {
                 let mut keyboard = InlineKeyboardMarkup::new();
@@ -234,7 +232,7 @@ pub async fn process_magnet(api: &Api, pool: &Pool, message: &Message) -> Result
                 api.send(message.to_source_chat().text(&err_message).reply_markup(keyboard)).await?;
                 return Err(BotError::logic(err_message));
             }
-            
+
             let magnet_id = register_magnet(pool, user, &link.clone().full_link()).await?;
             let mut keyboard = InlineKeyboardMarkup::new();
             for dir in dirs {

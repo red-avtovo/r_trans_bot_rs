@@ -1,0 +1,4 @@
+{
+    "workbench.colorTheme": "Default Dark+",
+    "docker.host": "ssh://docker.remote:47821"
+}

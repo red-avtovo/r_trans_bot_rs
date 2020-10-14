@@ -20,7 +20,7 @@ jobs:
       with:
         username: ${{ secrets.REGISTRY_USERNAME }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
-    
+
     - name: Get shortsha
       id: vars
       run: |
@@ -45,4 +45,3 @@ jobs:
         manifests: deployment/manifest.yaml
         images: |
             redavtovo/r-trans-bot-rs:${{ steps.vars.outputs.sha_short }}
-    

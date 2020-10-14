@@ -1,39 +1,29 @@
+
+use diesel::pg::PgConnection;
+use diesel::r2d2::{
+    ConnectionManager,
+    Pool
+};
 use std::env;
-use bb8_postgres::PostgresConnectionManager;
-use crate::logic::repository::{PError, Pool};
+use super::errors::{
+    DbError
+};
+
 #[derive(Clone, Debug)]
-pub struct DbConfig {
-    config: String
-}
+pub struct DbConfig;
 
 impl DbConfig {
-    pub fn create() -> DbConfig {
-        let host = &env::var("DB_HOST").expect("DB_HOST not set");
-        let user_name = &env::var("DB_USER_NAME").expect("DB_USER_NAME not set");
-        let password = &env::var("DB_PASSWORD").expect("DB_PASSWORD not set");
-        let port = &env::var("DB_PORT").expect("DB_PORT not set");
-        let db_name = &env::var("DB_NAME").expect("DB_NAME not set");
-        let config = format!(
-            "host={} port={} user={} password={} dbname={}",
-            host,
-            port,
-            user_name,
-            password,
-            db_name
-        );
-        DbConfig {
-            config
-        }
+    pub fn get_pool() -> Pool<ConnectionManager<PgConnection>> {
+        let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+        let manager = ConnectionManager::<PgConnection>::new(database_url);
+        r2d2::Pool::builder().max_size(15)
+            .build(manager)
+            .expect("Failed to create pool.")
     }
 
-    pub async fn pool(&self) -> Result<Pool, PError> {
-        let manager = PostgresConnectionManager::new(
-            self.config.parse().unwrap(),
-            tokio_postgres::NoTls,
-        );
-        let pool = bb8::Pool::builder()
-            .max_size(15)
-            .build(manager).await?;
-        Ok(pool)
+    pub fn test_connection(pool: Pool<ConnectionManager<PgConnection>>) -> Result<(), DbError> {
+        // https://dev.to/werner/practical-rust-web-development-connection-pool-46f4
+        pool.get()?;
+        Ok(())
     }
 }

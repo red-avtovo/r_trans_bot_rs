@@ -11,7 +11,7 @@ use std::fmt;
 use crate::fromError;
 
 use rand::{
-    thread_rng, 
+    thread_rng,
     Rng,
     distributions::Alphanumeric
 };
@@ -152,4 +152,4 @@ mod test {
         assert_eq!(message, dec2);
         println!("Decrypted data 2: {}", dec2);
     }
-}   
+}
