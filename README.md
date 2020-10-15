@@ -25,6 +25,7 @@ docker run --rm -it --env-file ./.env bot
     diesel --database-url="postgres://postgres:mysecretpassword@172.17.0.4:5432/postgres" migration run
 
 
-[Use the bot](https://t.me/RTransBot)
+| [![](https://www.iconfinder.com/icons/986956/download/png/24) Use the bot](https://t.me/RTransBot) |
+| ---- |
 
 Support the project: [![Donate button](https://www.paypalobjects.com/en_US/DK/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=H337RKJSC4YG4&source=url)
