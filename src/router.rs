@@ -125,11 +125,18 @@ async fn process_callback(api: Api, pool: &Pool, callback_query: CallbackQuery, 
             match callback_query.message {
                 Some(_) if value.starts_with("t_status:") => {}
                 Some(_) if value.starts_with("t_remove:") => {},
-                Some(message) => api.send(message.delete()).await?,
+                Some(message) => hide_or_delete(&api, &message).await?,
                 _ => {}
             }
         }
         _ => {}
     }
     Ok(())
+}
+
+async fn hide_or_delete(api: &Api, message: &Message) -> Result<(), telegram_bot::Error> {
+    match api.send(message.edit_text("-- Hidden --")).await {
+        Ok(_) => Ok(()),
+        Err(_) => api.send(message.delete()).await
+    }
 }
