@@ -69,6 +69,12 @@ fn update_task_status_button(task_id: &Uuid, torrent: &Torrent) -> InlineKeyboar
     keyboard
 }
 
+fn hide_message_button() -> InlineKeyboardMarkup {
+    let mut keyboard = InlineKeyboardMarkup::new();
+    keyboard.add_row(vec![InlineKeyboardButton::callback(task_commands::TASK_HIDE, task_commands::TASK_HIDE)]);
+    keyboard
+}
+
 pub async fn start_download(api: &Api, pool: &Pool, user_id: &i64, data: &str, chat_ref: &ChatRef) -> Result<(), BotError> {
     let data_parts: Vec<String> = data.split(":")
         .map(|part| String::from(part))
@@ -190,7 +196,9 @@ pub async fn remove_task(api: &Api, pool: &Pool, user_id: &i64, data: &str, mess
     let client: TransClient = server.to_client();
     match client.torrent_remove(vec![Id::Hash(hash.clone())], true).await {
         Ok(_) => {
-            api.send(message.edit_text(format!("Torrent\n{}\nwas removed!", &link.dn()))).await?;
+            api.send(message.edit_text(format!("Torrent\n{}\nwas removed!", &link.dn()))
+                .reply_markup(hide_message_button())
+            ).await?;
         },
         _ => {
             return Err(BotError::logic(format!("Failed to remove the torrent: {}", link.dn())))
