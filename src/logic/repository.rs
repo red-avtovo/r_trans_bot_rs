@@ -69,10 +69,10 @@ async fn get_directory_by_id(pool: &Pool, id: &Uuid) -> Result<DownloadDirectory
 
 pub(crate) async fn get_directory_next_ordinal(pool: &Pool, user: &User) -> Result<i32, DbError> {
     let connection = pool.get()?;
-    let v: Option<i32> = dirs::table.filter(dirs::user_id.eq(&user.id))
+    let last_ordinal: i32 = dirs::table.filter(dirs::user_id.eq(&user.id))
     .select(diesel::dsl::max(dirs::ordinal))
-    .first(&connection)?;
-    Ok(v.unwrap_or(0))
+    .first::<Option<i32>>(&connection)?.unwrap_or(0);
+    Ok(last_ordinal + 1)
 }
 
 pub async fn get_directory(pool: &Pool, user: &User, ordinal: i32) -> Result<Option<DownloadDirectory>, DbError> {

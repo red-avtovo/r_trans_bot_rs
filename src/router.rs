@@ -80,10 +80,10 @@ async fn process_message(api: Api, pool: Pool, message: Message, last_command: &
                 };
                 if result { last_command.remove(user_id); }
             },
-            _ => { api.send(message.to_source_chat().text("I don't know what you mean")).await?; }
+            _ => { api.send(message.to_source_chat().text("I don't know what you mean").reply_markup(settings_keyboard())).await?; }
         },
         _ => {
-            api.send(message.to_source_chat().text("Message type is not supported!")).await?;
+            api.send(message.to_source_chat().text("Message type is not supported!").reply_markup(settings_keyboard())).await?;
             ()
         }
     };
