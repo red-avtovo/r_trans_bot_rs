@@ -20,21 +20,25 @@ pub mod settings_commands {
     pub const MENU: &str = "Settings ⚙️";
 }
 
-pub async fn start_command(api: &Api, pool: &Pool, message: Message) -> Result<(), BotError> {
-    debug!("Handle /start command");
-    let m_clone = message.clone();
+pub fn settings_keyboard() -> ReplyKeyboardMarkup {
     let mut keyboard = ReplyKeyboardMarkup::new();
     keyboard.add_row(vec![
         KeyboardButton::new(settings_commands::MENU)
     ]);
     keyboard.resize_keyboard();
+    keyboard
+}
+
+pub async fn start_command(api: &Api, pool: &Pool, message: Message) -> Result<(), BotError> {
+    debug!("Handle /start command");
+    let m_clone = message.clone();
     debug!("Checking if user already exist");
     match get_user(pool, &m_clone.from.id.into()).await {
         Ok(result) => {
             match result {
                 Some(_) => {
                     debug!("User was already registered");
-                    api.send(&message.to_source_chat().text(format!("Welcome back, {}", &message.from.first_name)).reply_markup(keyboard)).await?;
+                    api.send(&message.to_source_chat().text(format!("Welcome back, {}", &message.from.first_name)).reply_markup(settings_keyboard())).await?;
                 },
                 None => {
                     debug!("Registering new user");
@@ -47,7 +51,7 @@ pub async fn start_command(api: &Api, pool: &Pool, message: Message) -> Result<(
                         salt: random_salt(),
                     };
                     save_user(pool, user).await?;
-                    api.send(&message.to_source_chat().text(format!("Welcome, {}", &message.from.first_name)).reply_markup(keyboard)).await?;
+                    api.send(&message.to_source_chat().text(format!("Welcome, {}", &message.from.first_name)).reply_markup(settings_keyboard())).await?;
                 }
             }
         },
