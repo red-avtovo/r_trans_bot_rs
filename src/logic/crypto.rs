@@ -130,6 +130,7 @@ pub fn random_salt() -> String {
     thread_rng()
         .sample_iter(&Alphanumeric)
         .take(AesOfb::nonce_size())
+        .map(char::from)
         .collect()
 }
 
