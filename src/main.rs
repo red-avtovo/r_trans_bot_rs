@@ -10,9 +10,11 @@ use logic::repository::{
 mod router;
 mod logic;
 mod errors;
+
 use errors::BotError;
 
 mod db_config;
+
 use db_config::DbConfig;
 
 #[macro_use]
