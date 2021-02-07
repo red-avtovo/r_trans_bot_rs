@@ -1,4 +1,4 @@
-FROM ekidd/rust-musl-builder:stable-openssl11 AS cargo-build
+FROM ekidd/rust-musl-builder:stable AS cargo-build
 
 COPY Cargo.toml Cargo.toml
 
