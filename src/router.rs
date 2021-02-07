@@ -95,13 +95,14 @@ async fn process_callback(api: Api, pool: &Pool, callback_query: CallbackQuery, 
     let user_id: &i64 = &callback_query.from.id.into();
     let chat_ref = &callback_query.from.to_chat_ref();
     let data = callback_query.data.clone();
+    let message = callback_query.clone().message.unwrap();
     match data {
         // download:magnet_uuid:directory_ordinal (1-64 bytes)
         Some(ref value) if value.starts_with("download:") => start_download(&api, pool, user_id,value, chat_ref).await?,
         // t_status:task_uuid
-        Some(ref value) if value.starts_with("t_status:") => update_task_status(&api, pool, user_id,value, &callback_query.clone().message.unwrap()).await?,
+        Some(ref value) if value.starts_with("t_status:") => update_task_status(&api, pool, user_id,value, &message).await?,
         // t_remove:task_uuid
-        Some(ref value) if value.starts_with("t_remove:") => remove_task(&api, pool, user_id,value, &callback_query.clone().message.unwrap()).await?,
+        Some(ref value) if value.starts_with("t_remove:") => remove_task(&api, pool, user_id,value, &message).await?,
         // static commands
         Some(ref data_string) => match data_string.as_str() {
             direcoties_commands::LIST_DIRECTORIES => list_directories(&api, pool, user_id, chat_ref).await?,
