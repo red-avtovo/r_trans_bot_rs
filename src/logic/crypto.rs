@@ -1,12 +1,12 @@
 use aes::Aes256;
-use aes::block_cipher::{
-    BlockCipher,
+
+use aes::cipher::{
     NewBlockCipher,
     generic_array::typenum::Unsigned
 };
 use base64::{encode, decode};
 use ofb::Ofb;
-use ofb::stream_cipher::{NewStreamCipher, SyncStreamCipher};
+use ofb::cipher::{BlockCipher, NewStreamCipher, SyncStreamCipher};
 use std::fmt;
 use crate::fromError;
 
