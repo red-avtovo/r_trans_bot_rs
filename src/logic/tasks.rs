@@ -107,7 +107,7 @@ pub async fn start_download(api: &Api, pool: &Pool, user_id: &i64, data: &str, c
             }).await {
                 Ok(response) => {
                     let arguments: TorrentAdded = response.arguments;
-                    let torrent = arguments.torrent_added;
+                    let torrent = arguments.torrent_added.unwrap();
                     let name: String = magnet_link.dn();
                     api.send(chat_ref.text(format!("Downloading {}\nto {}", &name, &dir.alias))
                     .reply_markup(update_task_status_button(&task.id, &torrent))).await?;
