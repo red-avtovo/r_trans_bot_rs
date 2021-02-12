@@ -6,7 +6,8 @@ use crate::logic::{
     directories::*,
     servers::*,
     tasks::*,
-    repository::Pool
+    repository::Pool,
+    rutracker::get_magnet
 };
 use async_trait::async_trait;
 use log::*;
@@ -56,21 +57,8 @@ async fn process_message(api: Api, pool: Pool, message: Message, last_command: &
         MessageKind::Text { ref data, .. } => match data.as_str() {
             "/start" => start_command(&api, &pool, message).await?,
             settings_commands::MENU => settings_menu(&api, message).await?,
-            _ if data.as_str().contains("magnet:") => {
-                log::debug!("Processing a magnet link");
-                match process_magnet(&api, &pool, &message).await {
-                    Ok(_) => {
-                        log::debug!("Processing of a magnet link passed. Deleting the original message");
-                        match api.send(message.delete()).await {
-                            Ok(_) => log::debug!("Message was successfully deleted!"),
-                            _ => log::warn!("Unable to delete the original message!")
-                        }
-                    },
-                    _ => {
-                        log::warn!("Processing of a magnet link failed! The link was: {}", &data);
-                    }
-                }
-            },
+            s if s.contains("magnet:") => try_to_process_magnet(&api, &pool, &message, &data).await,
+            s if s.starts_with("https://rutracker.org/forum/viewtopic.php?t=") => try_to_process_rutracker_link(&api, &pool, &message, &data).await,
             // step 2 messages
             _ if last_command.contains_key(user_id) => {
                 let result = match last_command.get(user_id).unwrap().as_str() {
@@ -88,6 +76,38 @@ async fn process_message(api: Api, pool: Pool, message: Message, last_command: &
         }
     };
     Ok(())
+}
+async fn try_to_process_rutracker_link(api: &Api, pool: &Pool, message: &Message, data: &String) {
+    let url = data.to_lowercase();
+    log::debug!("Fetching {}", url);
+    match get_magnet(url).await {
+        Ok(optional_magnet) => match optional_magnet {
+            Some(magnet_link) => {
+                try_to_process_magnet(api, pool, message, &magnet_link).await;
+            },
+            _ => {
+                api.send(message.to_source_chat().text("Couldn't find a magnet on the page. Try to send the magnet manually")).await;
+            }
+        },
+        _ => {
+            api.send(message.to_source_chat().text("Couldn't fetch the link. Try to send the magnet manually")).await;
+        }
+    };
+}
+async fn try_to_process_magnet(api: &Api, pool: &Pool, message: &Message, data: &String) {
+    log::debug!("Processing a magnet link");
+    match process_magnet(&api, &pool, &message).await {
+        Ok(_) => {
+            log::debug!("Processing of a magnet link passed. Deleting the original message");
+            match api.send(message.delete()).await {
+                Ok(_) => log::debug!("Message was successfully deleted!"),
+                _ => log::warn!("Unable to delete the original message!")
+            }
+        },
+        _ => {
+            log::warn!("Processing of a magnet link failed! The link was: {}", &data);
+        }
+    }
 }
 
 async fn process_callback(api: Api, pool: &Pool, callback_query: CallbackQuery, last_command: &mut HashMap<i64, String>) -> Result<(), BotError> {
@@ -131,7 +151,7 @@ async fn process_callback(api: Api, pool: &Pool, callback_query: CallbackQuery, 
                 Some(_) if value.starts_with("t_status:") => {}
                 Some(_) if value.starts_with("t_remove:") => {},
                 Some(message) => match message {
-                    MessageOrChannelPost::Message(it) => hide_or_delete(&api, &it).await?,
+                    MessageOrChannelPost::Message(it) => delete_or_hide(&api, &it).await?,
                     MessageOrChannelPost::ChannelPost(_) => {}
                 },
                 _ => {}
@@ -142,9 +162,9 @@ async fn process_callback(api: Api, pool: &Pool, callback_query: CallbackQuery, 
     Ok(())
 }
 
-async fn hide_or_delete(api: &Api, message: &Message) -> Result<(), telegram_bot::Error> {
-    match api.send(message.edit_text("-- Hidden --")).await {
+async fn delete_or_hide(api: &Api, message: &Message) -> Result<(), telegram_bot::Error> {
+    match api.send(message.delete()).await {
         Ok(_) => Ok(()),
-        Err(_) => api.send(message.delete()).await
+        Err(_) => api.send(message.edit_text("-- Hidden --")).await.map(|_| ())
     }
 }

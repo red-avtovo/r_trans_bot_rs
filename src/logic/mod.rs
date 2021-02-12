@@ -8,3 +8,4 @@ pub mod magnet;
 pub mod trans_url;
 
 mod crypto;
+pub mod rutracker;
