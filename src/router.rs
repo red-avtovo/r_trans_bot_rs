@@ -95,7 +95,11 @@ async fn process_callback(api: Api, pool: &Pool, callback_query: CallbackQuery, 
     let user_id: &i64 = &callback_query.from.id.into();
     let chat_ref = &callback_query.from.to_chat_ref();
     let data = callback_query.data.clone();
-    let message = callback_query.clone().message.unwrap();
+    let message = match callback_query.clone().message.unwrap() {
+        MessageOrChannelPost::Message(it) => it,
+        MessageOrChannelPost::ChannelPost(_) => return Ok(())
+    };
+
     match data {
         // download:magnet_uuid:directory_ordinal (1-64 bytes)
         Some(ref value) if value.starts_with("download:") => start_download(&api, pool, user_id,value, chat_ref).await?,
@@ -126,7 +130,10 @@ async fn process_callback(api: Api, pool: &Pool, callback_query: CallbackQuery, 
             match callback_query.message {
                 Some(_) if value.starts_with("t_status:") => {}
                 Some(_) if value.starts_with("t_remove:") => {},
-                Some(message) => hide_or_delete(&api, &message).await?,
+                Some(message) => match message {
+                    MessageOrChannelPost::Message(it) => hide_or_delete(&api, &it).await?,
+                    MessageOrChannelPost::ChannelPost(_) => {}
+                },
                 _ => {}
             }
         }
