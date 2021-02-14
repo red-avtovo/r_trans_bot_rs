@@ -95,8 +95,8 @@ async fn try_to_process_rutracker_link(api: &Api, pool: &Pool, message: &Message
     };
 }
 async fn try_to_process_magnet(api: &Api, pool: &Pool, message: &Message, data: &String) {
-    log::debug!("Processing a magnet link");
-    match process_magnet(&api, &pool, &message).await {
+    log::debug!("Processing a magnet link: {}", data);
+    match process_magnet(&api, &pool, &message, data).await {
         Ok(_) => {
             log::debug!("Processing of a magnet link passed. Deleting the original message");
             match api.send(message.delete()).await {

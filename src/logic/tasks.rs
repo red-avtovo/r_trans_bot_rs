@@ -217,9 +217,8 @@ fn torrent_status(torrent: &Torrent) -> String {
     format!("{}{}[{}%]\nUpdated at: {}", filled, empty, percent, Utc::now().format("%d.%m.%Y %H:%M:%S"))
 }
 
-pub async fn process_magnet(api: &Api, pool: &Pool, message: &Message) -> Result<(), BotError> {
-    let text = message.text().unwrap_or_default();
-    let magnet = MagnetLink::find(&text);
+pub async fn process_magnet(api: &Api, pool: &Pool, message: &Message, data: &String) -> Result<(), BotError> {
+    let magnet = MagnetLink::find(data);
     match magnet {
         Some(link) => {
             let user = &get_user(pool, &message.from.id.into()).await?.unwrap();
@@ -252,7 +251,7 @@ pub async fn process_magnet(api: &Api, pool: &Pool, message: &Message) -> Result
                 .reply_markup(ReplyMarkup::InlineKeyboardMarkup(keyboard))).await?;
         },
         None => {
-            let err_message = format!("Couldn't parse magnet from text: {}", &text);
+            let err_message = format!("Couldn't parse magnet from text: {}", data);
             error!("{}", &err_message);
             api.send(message.text_reply("Sorry. Couldn't handle this magnet. Try later :(")).await?;
             return Err(BotError::logic(err_message));
