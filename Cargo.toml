@@ -26,7 +26,7 @@ ajson = "0.2"
 
 # Logs
 log = "0.4.8"
-env_logger = "0.8.2"
+env_logger = "0.9.0"
 
 job_scheduler = "1.2.1"
 telegram-bot = { git = "https://github.com/Mephistophiles/telegram-bot"}
