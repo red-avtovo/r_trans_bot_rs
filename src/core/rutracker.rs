@@ -1,16 +1,23 @@
-use scraper::{Selector, Html};
-use reqwest::{Url};
+use reqwest::Url;
+use scraper::{Html, Selector};
 
 pub async fn get_magnet(url: String) -> Result<Option<String>, reqwest::Error> {
     let client = reqwest::Client::new();
-    client.get(Url::parse(&url).unwrap()).send().await?
-        .text().await.map(|body| find_magnet(body))
+    client
+        .get(Url::parse(&url).unwrap())
+        .send()
+        .await?
+        .text()
+        .await
+        .map(|body| find_magnet(body))
 }
 
 pub fn find_magnet(html: String) -> Option<String> {
     let document = Html::parse_document(&html);
     let selector = Selector::parse("a.magnet-link").unwrap();
-    document.select(&selector).next()
+    document
+        .select(&selector)
+        .next()
         .map(|e| e.value().attr("href"))
         .flatten()
         .map(|s| s.to_string())

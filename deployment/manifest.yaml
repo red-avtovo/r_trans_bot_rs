@@ -1,3 +1,5 @@
+
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -6,17 +8,20 @@ metadata:
   labels:
     app: rtrans_bot
 data:
+  DB_USER: rtrans_user
+  DB_NAME: rtrans
   RUST_LOG: info
 
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: rtrans-bot
   namespace: bots
   labels:
     app: rtrans_bot
 spec:
+  serviceName: "rtrans-bot-service"
   replicas: 1
   selector:
     matchLabels:
@@ -37,3 +42,29 @@ spec:
                 name: rtrans-bot-config
             - secretRef:
                 name: rtrans-bot-secrets
+        - name: postgres
+          image: postgres:14-alpine
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: rtrans-bot-secrets
+                  key: DB_PASSWORD
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: rtrans-bot-config
+                  key: DB_USER
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: rtrans-bot-config
+                  key: DB_NAME
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+              subPath: data
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+              claimName: rtrans
