@@ -30,7 +30,7 @@ env_logger = "0.9.0"
 
 job_scheduler = "1.2.1"
 telegram-bot = { git = "https://github.com/ayrat555/telegram-bot", branch = "ayrat555/api-fixes-10" }
-transmission-rpc = "0.3.3"
+transmission-rpc = "=0.3.3"
 url = "2.1.1"
 rand = "0.8.3"
 async-trait = "0.1.36"
