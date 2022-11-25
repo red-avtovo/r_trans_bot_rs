@@ -26,7 +26,7 @@ ajson = "0.3"
 
 # Logs
 log = "0.4.8"
-env_logger = "0.9.0"
+env_logger = "0.10.0"
 
 job_scheduler = "1.2.1"
 telegram-bot = { git = "https://github.com/ayrat555/telegram-bot", branch = "ayrat555/api-fixes-10" }
