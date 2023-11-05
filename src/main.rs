@@ -1,6 +1,5 @@
 use std::env;
-use futures::StreamExt;
-use telegram_bot::*;
+use frankenstein::*;
 use dotenv::dotenv;
 use std::collections::HashMap;
 use logic::repository::{
@@ -31,13 +30,15 @@ async fn main() -> Result<(), BotError> {
     DbConfig::test_connection(pool.clone())?;
     test_db_crypto();
 
-    let token = env::var("TELEGRAM_BOT_TOKEN").expect("TELEGRAM_BOT_TOKEN not set");
-    let api = Api::new(token);
+    let token = &env::var("TELEGRAM_BOT_TOKEN").expect("TELEGRAM_BOT_TOKEN not set");
+    let api = AsyncApi::new(token);
     let mut last_command = HashMap::<i64, String>::new();
-    let mut stream = api.stream();
-    while let Some(update) = stream.next().await {
-        let update = update?;
-        router::route(api.clone(), &pool, update, &mut last_command).await;
+    let params = GetUpdatesParams::builder()
+        .build();
+    while let Ok(response) = api.get_updates(&params).await {
+        for update in response.result.iter() {
+            router::route(api.clone(), &pool, update, &mut last_command).await
+        }
     }
     Ok(())
 }

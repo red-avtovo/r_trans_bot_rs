@@ -1,4 +1,4 @@
-use telegram_bot::*;
+use frankenstein::*;
 use crate::errors::BotError;
 use super::{
     repository::{
@@ -40,13 +40,18 @@ pub mod task_commands {
     pub const TASK_HIDE: &str = "Hide 🙈";
 }
 
-async fn get_server(api: &Api, pool: &Pool, user: &User, chat_ref: &ChatRef) -> Option<Server> {
+async fn get_server(api: &Api, pool: &Pool, user: &User, chat_id: &ChatId) -> Option<Server> {
     let servers = get_servers_by_user_id(pool, user).await;
     match servers {
         Ok(ref servers) if servers.len() == 0 => {
             let mut keyboard = InlineKeyboardMarkup::new();
             keyboard.add_row(vec![InlineKeyboardButton::callback(servers_commands::REGISTER_SERVER, servers_commands::REGISTER_SERVER)]);
-            let _res = api.send(chat_ref.text("No Servers found! Please register one first!").reply_markup(keyboard)).await;
+            let send_params = SendMessageParams::builder()
+                .chat_id(chat_id)
+                .text("No Servers found! Please register one first!")
+                .reply_markup(ReplyMarkup::InlineKeyboardMarkup(keyboard))
+                .build();
+            let _res = api.send_message(&send_params).await;
             None
         }
         Ok(ref servers) => Some(servers.get(0).unwrap().clone()),
@@ -75,13 +80,17 @@ fn hide_message_button() -> InlineKeyboardMarkup {
     keyboard
 }
 
-pub async fn start_download(api: &Api, pool: &Pool, user_id: &i64, data: &str, chat_ref: &ChatRef) -> Result<(), BotError> {
+pub async fn start_download(api: &AsyncApi, pool: &Pool, user_id: &i64, data: &str, chat_id: &ChatId) -> Result<(), BotError> {
     let data_parts: Vec<String> = data.split(":")
         .map(|part| String::from(part))
         .collect();
     if data_parts.len()!=3 {
         error!("Broken download callback received: {}", &data);
-        api.send(chat_ref.text("We messed up. Can't start donwloading :(")).await?;
+        let send_param = SendMessageParams::builder()
+            .chat_id(chat_id)
+            .text("We messed up. Can't start donwloading :(")
+            .build();
+        api.send_message(&send_param).await?;
         return Ok(())
     }
     let magnet_id = Uuid::parse_str(data_parts[1].as_ref()).expect("Incorrect uuid received");
@@ -90,7 +99,7 @@ pub async fn start_download(api: &Api, pool: &Pool, user_id: &i64, data: &str, c
     let magnet = get_magnet_by_id(pool, user, magnet_id).await?.unwrap();
     let dir = get_directory(pool, user, dir_ordinal).await?;
 
-    let server = match get_server(api, pool, user, chat_ref).await {
+    let server = match get_server(api, pool, user, chat_id).await {
         Some(server) => server,
         None => return Ok(())
     };
@@ -109,30 +118,47 @@ pub async fn start_download(api: &Api, pool: &Pool, user_id: &i64, data: &str, c
                     let arguments: TorrentAdded = response.arguments;
                     let torrent = arguments.torrent_added.unwrap();
                     let name: String = magnet_link.dn();
-                    api.send(chat_ref.text(format!("Downloading {}\nto {}", &name, &dir.alias))
-                    .reply_markup(update_task_status_button(&task.id, &torrent))).await?;
+                    let send_params = SendMessageParams::builder()
+                        .chat_id(chat_id)
+                        .text(format!("Downloading {}\nto {}", &name, &dir.alias))
+                        .reply_markup(update_task_status_button(&task.id, &torrent))
+                        .build();
+                    api.send_message(&send_params).await?;
                 }
                 Err(_) => {
-                    api.send(chat_ref.text("Unable to add task")).await?;
+                    let send_param = SendMessageParams::builder()
+                        .chat_id(chat_id)
+                        .text("Unable to add task")
+                        .build();
+                    api.send_message(&send_param).await?;
                 }
             }
         },
         None => {
             let mut keyboard = InlineKeyboardMarkup::new();
             keyboard.add_row(vec![InlineKeyboardButton::callback(direcoties_commands::ADD_DIRECTORY, direcoties_commands::ADD_DIRECTORY)]);
-            api.send(chat_ref.text("No Directories found! Please add one first!").reply_markup(keyboard)).await?;
+            let send_params = SendMessageParams::builder()
+                .chat_id(chat_id)
+                .text("No Directories found! Please add one first!")
+                .reply_markup(ReplyMarkup::InlineKeyboardMarkup(keyboard))
+                .build();
+            api.send_message(&send_params).await?;
         }
     }
     Ok(())
 }
 
-pub async fn update_task_status(api: &Api, pool: &Pool, user_id: &i64, data: &str, message: &Message) -> Result<(), BotError> {
+pub async fn update_task_status(api: &AsyncApi, pool: &Pool, user_id: &i64, data: &str, message: &Message) -> Result<(), BotError> {
     let data_parts: Vec<String> = data.split(":")
         .map(|part| String::from(part))
         .collect();
     if data_parts.len()!=2 {
         error!("Broken task status callback received: {}", &data);
-        api.send(message.from.to_chat_ref().text("We messed up. Can't check the status :(")).await?;
+        let send_param = SendMessageParams::builder()
+            .chat_id(message.from.unwrap().id)
+            .text("We messed up. Can't check the status :(")
+            .build();
+        api.send_message(&send_param).await?;
         return Ok(())
     }
     let task_id = Uuid::parse_str(data_parts[1].as_ref()).expect("Incorrect uuid received");
@@ -155,28 +181,44 @@ pub async fn update_task_status(api: &Api, pool: &Pool, user_id: &i64, data: &st
             match response.arguments.torrents.iter().next() {
                 Some(torrent) => {
                     let name = torrent.name.as_ref().unwrap_or(&hash);
-                    api.send(message.edit_text(format!("Downloading {}\n{}", &name, torrent_status(torrent)))
-                        .reply_markup(update_task_status_button(&task.id, torrent))).await?;
+                    let send_params = SendMessageParams::builder()
+                        .chat_id(message.from.unwrap().id)
+                        .text(format!("Downloading {}\n{}", &name, torrent_status(torrent)))
+                        .reply_markup(update_task_status_button(&task.id, torrent))
+                        .build();
+                    api.send_message(&send_params).await?;
                 },
                 None => {
-                    api.send(message.edit_text(format!("Torrent\n{}\nwas removed", &link.dn()))).await?;
+                    let edit_params = EditMessageTextParams::builder()
+                        .chat_id(message.from.unwrap().id)
+                        .text(format!("Torrent\n{}\nwas removed", &link.dn()))
+                        .build();
+                    api.edit_message_text(&edit_params).await?;
                 }
             }
         },
         _ => {
-            api.send(message.edit_text(format!("{}\nTorrent was not found on the server!", &hash))).await?;
+            let send_param = SendMessageParams::builder()
+                .chat_id(message.from.unwrap().id)
+                .text(format!("{}\nTorrent was not found on the server!", &hash))
+                .build();
+            api.send_message(&send_param).await?;
         }
     }
     Ok(())
 }
 
-pub async fn remove_task(api: &Api, pool: &Pool, user_id: &i64, data: &str, message: &Message) -> Result<(), BotError> {
+pub async fn remove_task(api: &AsyncApi, pool: &Pool, user_id: &i64, data: &str, message: &Message) -> Result<(), BotError> {
     let data_parts: Vec<String> = data.split(":")
         .map(|part| String::from(part))
         .collect();
     if data_parts.len()!=2 {
         error!("Broken task removal callback received: {}", &data);
-        api.send(message.from.to_chat_ref().text("We messed up. Can't remove the task :(")).await?;
+        let send_param = SendMessageParams::builder()
+            .chat_id(message.from.unwrap().id)
+            .text("We messed up. Can't remove the task :(")
+            .build();
+        api.send_message(&send_param).await?;
         return Ok(())
     }
     let task_id = Uuid::parse_str(data_parts[1].as_ref()).expect("Incorrect uuid received");
@@ -196,9 +238,12 @@ pub async fn remove_task(api: &Api, pool: &Pool, user_id: &i64, data: &str, mess
     let client: TransClient = server.to_client();
     match client.torrent_remove(vec![Id::Hash(hash.clone())], true).await {
         Ok(_) => {
-            api.send(message.edit_text(format!("Torrent\n{}\nwas removed!", &link.dn()))
+            let send_param = SendMessageParams::builder()
+                .chat_id(message.from.unwrap().id)
+                .text(format!("Torrent\n{}\nwas removed", &link.dn()))
                 .reply_markup(hide_message_button())
-            ).await?;
+                .build();
+            api.send_message(&send_param).await?;
         },
         _ => {
             return Err(BotError::logic(format!("Failed to remove the torrent: {}", link.dn())))
@@ -217,17 +262,22 @@ fn torrent_status(torrent: &Torrent) -> String {
     format!("{}{}[{}%]\nUpdated at: {}", filled, empty, percent, Utc::now().format("%d.%m.%Y %H:%M:%S"))
 }
 
-pub async fn process_magnet(api: &Api, pool: &Pool, message: &Message, data: &String) -> Result<(), BotError> {
+pub async fn process_magnet(api: &AsyncApi, pool: &Pool, message: &Message, data: &String) -> Result<(), BotError> {
     let magnet = MagnetLink::find(data);
     match magnet {
         Some(link) => {
-            let user = &get_user(pool, &message.from.id.into()).await?.unwrap();
+            let user = &get_user(pool, &message.from.unwrap().id.into()).await?.unwrap();
             let server_count = get_servers_by_user_id(pool, user).await?.len();
             if server_count == 0 {
                 let mut keyboard = InlineKeyboardMarkup::new();
                 keyboard.add_row(vec![InlineKeyboardButton::callback(servers_commands::REGISTER_SERVER, servers_commands::REGISTER_SERVER)]);
                 let err_message = "No Servers found! Please register one first!".to_owned();
-                api.send(message.to_source_chat().text(&err_message).reply_markup(keyboard)).await?;
+                let send_param = SendMessageParams::builder()
+                    .chat_id(&message.from.unwrap().id)
+                    .text(&err_message)
+                    .reply_markup(ReplyMarkup::InlineKeyboardMarkup(keyboard))
+                    .build();
+                api.send_message(&send_param).await?;
                 return Err(BotError::logic(err_message));
             }
 
@@ -236,7 +286,12 @@ pub async fn process_magnet(api: &Api, pool: &Pool, message: &Message, data: &St
                 let mut keyboard = InlineKeyboardMarkup::new();
                 keyboard.add_row(vec![InlineKeyboardButton::callback(direcoties_commands::ADD_DIRECTORY, direcoties_commands::ADD_DIRECTORY)]);
                 let err_message = "No Directories found! Please add one first!".to_owned();
-                api.send(message.to_source_chat().text(&err_message).reply_markup(keyboard)).await?;
+                let send_params = SendMessageParams::builder()
+                    .chat_id(&message.from.unwrap().id)
+                    .text(&err_message)
+                    .reply_markup(ReplyMarkup::InlineKeyboardMarkup(keyboard))
+                    .build();
+                api.send_message(&send_params).await?;
                 return Err(BotError::logic(err_message));
             }
 
@@ -247,13 +302,21 @@ pub async fn process_magnet(api: &Api, pool: &Pool, message: &Message, data: &St
             }
             keyboard.add_row(vec![InlineKeyboardButton::callback("-- Cancel --","cancel")]);
 
-            api.send(message.to_source_chat().text(format!("{}\nChoose directory to download", link.dn()))
-                .reply_markup(ReplyMarkup::InlineKeyboardMarkup(keyboard))).await?;
+            let send_params = SendMessageParams::builder()
+                .chat_id(&message.from.unwrap().id)
+                .text(format!("{}\nChoose directory to download", link.dn()))
+                .reply_markup(ReplyMarkup::InlineKeyboardMarkup(keyboard))
+                .build();
+            api.send_message(&send_params).await?;
         },
         None => {
             let err_message = format!("Couldn't parse magnet from text: {}", data);
             error!("{}", &err_message);
-            api.send(message.text_reply("Sorry. Couldn't handle this magnet. Try later :(")).await?;
+            let send_params = SendMessageParams::builder()
+                .chat_id(&message.from.unwrap().id)
+                .text("Sorry. Couldn't handle this magnet. Try later :(")
+                .build();
+            api.send_message(&send_params).await?;
             return Err(BotError::logic(err_message));
         }
     };

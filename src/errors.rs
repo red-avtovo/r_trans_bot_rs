@@ -24,12 +24,12 @@ impl BotError {
 
 #[derive(Debug)]
 pub(crate) enum BotErrorKind{
-    TelegramError(telegram_bot::Error),
+    TelegramError(frankenstein::Error),
     DbError(DbError),
     BotLogic(String)
 }
 
-fromError!(telegram_bot::Error, BotError, BotErrorKind::TelegramError);
+fromError!(frankenstein::Error, BotError, BotErrorKind::TelegramError);
 fromError!(DbError, BotError, BotErrorKind::DbError);
 
 fromError!(r2d2::Error, BotError, BotErrorKind::DbError);

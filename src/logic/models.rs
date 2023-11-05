@@ -25,7 +25,7 @@ pub struct User {
 #[derive(Insertable, Clone)]
 #[table_name = "users"]
 pub struct NewUser {
-    pub id: i64,
+    pub id: i64, //Can't be changed to u64 because of diesel
     pub chat: i64,
     pub first_name: String,
     pub last_name: Option<String>,

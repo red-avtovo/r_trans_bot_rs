@@ -30,7 +30,7 @@ pub async fn save_user(pool: &Pool, user: NewUser) -> Result<User, DbError> {
     .map(|u| u.unwrap())
 }
 
-pub async fn get_user(pool: &Pool, id: &i64) -> Result<Option<User>, DbError> {
+pub async fn get_user(pool: &Pool, id: &i64 /* can't change it because of diesel */) -> Result<Option<User>, DbError> {
     let connection = pool.get()?;
     users::table
     .filter(users::id.eq(id))
