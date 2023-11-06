@@ -1,8 +1,6 @@
-use std::{fmt,error};
-use crate::{
-    fromError,
-    fromErrorString
-};
+use std::{error, fmt};
+
+use crate::{fromError, fromErrorString};
 
 /// ***************
 /// Bot Errors
@@ -19,17 +17,18 @@ impl BotError {
     pub(crate) fn logic(message: String) -> BotError {
         BotError(BotErrorKind::BotLogic(message))
     }
-
 }
 
 #[derive(Debug)]
-pub(crate) enum BotErrorKind{
-    TelegramError(telegram_bot::Error),
+pub(crate) enum BotErrorKind {
+    TelegramError(teloxide::ApiError),
+    TelegramRequestError(teloxide::RequestError),
     DbError(DbError),
-    BotLogic(String)
+    BotLogic(String),
 }
 
-fromError!(telegram_bot::Error, BotError, BotErrorKind::TelegramError);
+fromError!(teloxide::ApiError, BotError, BotErrorKind::TelegramError);
+fromError!(teloxide::RequestError, BotError, BotErrorKind::TelegramRequestError);
 fromError!(DbError, BotError, BotErrorKind::DbError);
 
 fromError!(r2d2::Error, BotError, BotErrorKind::DbError);
@@ -41,13 +40,15 @@ impl fmt::Display for BotError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.0 {
             BotErrorKind::TelegramError(error) => write!(f, "{}", error),
+            BotErrorKind::TelegramRequestError(error) => write!(f, "{}", error),
             BotErrorKind::DbError(error) => write!(f, "{}", error),
             BotErrorKind::BotLogic(error) => write!(f, "{}", error),
         }
     }
 }
 
-impl std::error::Error for BotError{}
+impl std::error::Error for BotError {}
+impl std::error::Error for DbError {}
 
 /// ***************
 /// Magnet Generation Error
@@ -75,14 +76,13 @@ impl error::Error for MagnetMappingError {
     }
 }
 
-
 /// ***************
 /// DB ERRORS
 /// ***************
 #[derive(Debug)]
 pub(crate) enum DbErrorKind {
     Connection(String),
-    Execution(String)
+    Execution(String),
 }
 
 #[derive(Debug)]
@@ -136,12 +136,22 @@ macro_rules! fromErrorString {
 #[cfg(test)]
 #[allow(dead_code, non_snake_case)]
 mod test {
-
     use super::*;
 
     //compilation test
-    fn r2d2_BotError(e: r2d2::Error) -> BotError { e.into() }
-    fn r2d2_DbError(e: r2d2::Error) -> DbError { e.into() }
-    fn diesel_result_ErrorDbError(e: diesel::result::Error) -> DbError { e.into() }
-    fn string_DbError(e: String) -> DbError { e.into() }
+    fn r2d2_BotError(e: r2d2::Error) -> BotError {
+        e.into()
+    }
+
+    fn r2d2_DbError(e: r2d2::Error) -> DbError {
+        e.into()
+    }
+
+    fn diesel_result_ErrorDbError(e: diesel::result::Error) -> DbError {
+        e.into()
+    }
+
+    fn string_DbError(e: String) -> DbError {
+        e.into()
+    }
 }

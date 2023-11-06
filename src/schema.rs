@@ -5,7 +5,7 @@ table! {
         alias -> Varchar,
         path -> Varchar,
         ordinal -> Int4,
-        created_at -> Nullable<Timestamptz>,
+        created_at -> Timestamptz,
     }
 }
 
@@ -14,7 +14,7 @@ table! {
         id -> Uuid,
         user_id -> Int8,
         url -> Varchar,
-        created_at -> Nullable<Timestamptz>,
+        created_at -> Timestamptz,
     }
 }
 
@@ -25,7 +25,7 @@ table! {
         url -> Varchar,
         username -> Nullable<Varchar>,
         password -> Nullable<Varchar>,
-        created_at -> Nullable<Timestamptz>,
+        created_at -> Timestamptz,
     }
 }
 
@@ -37,7 +37,7 @@ table! {
         magnet_id -> Uuid,
         status -> Varchar,
         description -> Nullable<Text>,
-        created_at -> Nullable<Timestamptz>,
+        created_at -> Timestamptz,
     }
 }
 
@@ -49,7 +49,16 @@ table! {
         last_name -> Nullable<Varchar>,
         username -> Nullable<Varchar>,
         salt -> Varchar,
-        created_at -> Nullable<Timestamptz>,
+        created_at -> Timestamptz,
+    }
+}
+
+table! {
+    friends (id) {
+        id -> Uuid,
+        user_id -> Int8,
+        friend_user_id -> Int8,
+        created_at -> Timestamptz,
     }
 }
 
@@ -59,11 +68,7 @@ joinable!(servers -> users (user_id));
 joinable!(tasks -> magnets (magnet_id));
 joinable!(tasks -> servers (server_id));
 joinable!(tasks -> users (user_id));
+joinable!(friends -> users (user_id));
 
-allow_tables_to_appear_in_same_query!(
-    dirs,
-    magnets,
-    servers,
-    tasks,
-    users,
-);
+allow_tables_to_appear_in_same_query!(dirs, magnets, servers, tasks, users,);
+allow_tables_to_appear_in_same_query!(users, friends);

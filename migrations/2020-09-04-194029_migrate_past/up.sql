@@ -48,7 +48,7 @@ create table if not exists magnets
     id         uuid          not null
         constraint magnets_pkey
             primary key,
-    user_id    bigint       not null
+    user_id    bigint        not null
         constraint magnets_user_id_fkey
             references users
             on update restrict on delete restrict,

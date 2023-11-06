@@ -1,3 +1,5 @@
+use url::Url;
+
 #[derive(Debug, Clone)]
 pub struct TransUrl(String);
 
@@ -7,8 +9,8 @@ impl TransUrl {
         let base_url = lowercased_url.split("/transmission/web").into_iter().next();
         base_url.map(|url| TransUrl(url.to_owned()))
     }
-    pub fn to_rpc_url(&self) -> String {
-        self.0.clone()+"/transmission/rpc"
+    pub fn to_rpc_url(&self) -> Url {
+        (self.0.clone() + "/transmission/rpc").parse().unwrap()
     }
 
     pub(crate) fn get_base_url(&self) -> String {
@@ -29,7 +31,7 @@ mod test {
     #[test]
     fn test_trans_url_rpc_generation() {
         let url = TransUrl("http://localhost".to_owned());
-        assert_eq!("http://localhost/transmission/rpc", url.to_rpc_url())
+        assert_eq!("http://localhost/transmission/rpc".parse::<Url>().unwrap(), url.to_rpc_url())
     }
 
     #[test]

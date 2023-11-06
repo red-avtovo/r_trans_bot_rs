@@ -8,7 +8,6 @@ on:
 
 jobs:
   build:
-    if: contains(github.event.pull_request.labels.*.name, 'deploy') == false
     runs-on: ubuntu-latest
 
     steps:
@@ -22,47 +21,54 @@ jobs:
       run: |
          echo ::set-output name=sha_short::$(git rev-parse --short=6 ${{ github.sha }})
 
-    - name: Build
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+
+    - run: rustup target add x86_64-unknown-linux-gnu && sudo apt-get install libssl-dev
+
+    - uses: actions-rs/cargo@v1
+      with:
+        command: build
+        args: --release --all-features --target x86_64-unknown-linux-gnu
+
+    - name: Copy file
+      uses: canastro/copy-action@0.0.2
+      with:
+        source: target/x86_64-unknown-linux-gnu/release/remote-transmission-bot
+        target: ./remote-transmission-bot
+
+    - name: Package
       run: |
         docker build -t redavtovo/r-trans-bot-rs:${{ steps.vars.outputs.sha_short }} .
 
-  build-push-deploy:
-    if: contains(github.event.pull_request.labels.*.name, 'deploy')
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v1
-      with:
-        fetch-depth: 1
-
     - name: Docker login
+      if: contains(github.event.pull_request.labels.*.name, 'deploy')
       uses: azure/docker-login@v1
       with:
         username: ${{ secrets.REGISTRY_USERNAME }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
 
-    - name: Get shortsha
-      id: vars
+    - name: Push
+      if: contains(github.event.pull_request.labels.*.name, 'deploy')
       run: |
-         echo ::set-output name=sha_short::$(git rev-parse --short=6 ${{ github.sha }})
-
-    - name: Build and Deploy
-      run: |
-        docker build -t redavtovo/r-trans-bot-rs:${{ steps.vars.outputs.sha_short }} .
         docker tag redavtovo/r-trans-bot-rs:${{ steps.vars.outputs.sha_short }} redavtovo/r-trans-bot-rs:latest
         docker push redavtovo/r-trans-bot-rs:${{ steps.vars.outputs.sha_short }}
         docker push redavtovo/r-trans-bot-rs:latest
 
     - name: Prepare K8S
+      if: contains(github.event.pull_request.labels.*.name, 'deploy')
       uses: Azure/k8s-set-context@v1
       with:
         kubeconfig: ${{ secrets.KUBE_CONFIG }}
 
     - name: Deploy to K8S
+      if: contains(github.event.pull_request.labels.*.name, 'deploy')
       uses: Azure/k8s-deploy@v1
       with:
         namespace: bots
         manifests: deployment/manifest.yaml
         images: |
-            redavtovo/r-trans-bot-rs:${{ steps.vars.outputs.sha_short }}
+          redavtovo/r-trans-bot-rs:${{ steps.vars.outputs.sha_short }}
+
+    
