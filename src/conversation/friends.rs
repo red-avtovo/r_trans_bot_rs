@@ -17,7 +17,7 @@ pub async fn list_friends(
 ) -> Result<(), BotError> {
     let friends = get_friends(pool, user_id).await.unwrap();
     if friends.is_empty() {
-        bot.send_message(*chat_id, "You don't have any friends now 😢. Try adding one with /addfriend command").await?;
+        bot.send_message(*chat_id, "You don't have any friends now 😢. Try adding one with /add_friend command").await?;
     } else {
         let buttons = friends.chunks(2).into_iter()
             .map(|chunk|

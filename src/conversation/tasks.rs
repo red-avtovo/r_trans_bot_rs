@@ -20,6 +20,7 @@ use crate::db::{
     },
 };
 use crate::errors::BotError;
+use crate::errors::BotErrorKind::BotLogic;
 
 pub mod task_commands {
     pub const TASK_STATUS: &str = "Update task status 👀";
@@ -172,7 +173,10 @@ pub async fn update_task_status(
     }
     let task_id = Uuid::parse_str(data_parts[1].as_ref()).expect("Incorrect uuid received");
     let user = &get_user(pool, &(*user_id as i64)).await?.unwrap();
-    let task = get_task_by_id(pool, &task_id).await?.unwrap();
+    let task = match get_task_by_id(pool, &task_id).await? {
+        Some(task) => task,
+        None => return Err(BotError::logic("No task found!".to_string())),
+    };
     let server = match get_server(bot, pool, user, &message.chat.id).await {
         Some(server) => server,
         None => return Ok(()),

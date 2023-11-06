@@ -1,16 +1,36 @@
 use log::{debug, warn};
+use teloxide::net::Download;
 use teloxide::prelude::*;
 use teloxide::types::{ForwardedFrom, Me, True};
 use crate::conversation::tasks::process_magnet;
 use crate::core::rutracker::get_magnet;
 use crate::db::repository::{add_friend, find_friend, get_user, Pool};
 use crate::router::HandlerResult;
+use futures::stream::StreamExt;  // for .next()
 
 pub async fn process_message(
     bot: Bot,
     pool: Pool,
     message: Message,
 ) -> HandlerResult {
+    let document = message.document().map(ToOwned::to_owned);
+    if let Some(document) = document {
+        match document.file_name {
+            Some(s) if s.ends_with(".torrent") => {
+                bot.send_message(message.chat.id, format!("You've sent {} file and I will support it soon", s)).await?;
+                let file = bot.get_file(document.file.id).await?;
+                let data = bot.download_file_stream(&file.path).next().await.unwrap()?;
+                // let content = String::from_utf8(data.to_vec())?;
+                bot.send_message(message.chat.id, format!("File  of {} bytes received", data.len())).await?;
+            }
+            Some(s) => {
+                bot.send_message(message.chat.id, format!("You've sent {} file, but I don't support it", s)).await?;
+            }
+            None => {}
+        }
+        return Ok(())
+    };
+
     match message.text().map(ToOwned::to_owned) {
         Some(s) if s.contains("magnet:") => try_to_process_magnet(&bot, &pool, &message, &s).await?,
         Some(s) if s.starts_with("https://rutracker.org/forum/viewtopic.php?t=") => {
@@ -20,6 +40,7 @@ pub async fn process_message(
             bot.send_message(message.chat.id, "I don't know what you mean").await?;
         }
     };
+
     Ok(())
 }
 

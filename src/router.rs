@@ -126,7 +126,8 @@ async fn process_callback(
     match data {
         s if s.starts_with("t_status:") => {}
         s if s.starts_with("t_remove:") => {}
-        s if s.starts_with("Back") => {}
+        s if s.starts_with(servers_commands::BACK_TO_SETTINGS) => {}
+        s if s.starts_with(directories_commands::BACK_TO_SETTINGS) => {}
         _ => delete_or_hide(&bot, &message).await?
     }
     bot.answer_callback_query(callback_query.id).await?;
