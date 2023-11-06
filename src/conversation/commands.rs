@@ -14,7 +14,7 @@ use log::*;
 use teloxide::Bot;
 use teloxide::prelude::*;
 use teloxide::requests::Requester;
-use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
+use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup, KeyboardMarkup, KeyboardRemove, True};
 use teloxide::utils::command::BotCommands;
 
 use crate::router::{BotDialogue, HandlerResult, State};
@@ -87,7 +87,7 @@ pub async fn start_command(bot: Bot, pool: Pool, message: Message) -> HandlerRes
             Some( user ) => {
                 debug!("User was already registered");
                 bot.send_message(message.chat.id, format!("Welcome back, {}", user.first_name))
-                    .reply_markup(InlineKeyboardMarkup::new(vec![vec![]]))
+                    .reply_markup(KeyboardRemove { remove_keyboard: True, selective: None })
                     .await?;
             }
             None => {

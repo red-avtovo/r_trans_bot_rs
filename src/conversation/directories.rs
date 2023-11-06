@@ -33,6 +33,10 @@ pub async fn list_directories(
                 directories_commands::RESET_DIRECTORIES,
                 directories_commands::RESET_DIRECTORIES,
             )],
+            vec![InlineKeyboardButton::callback(
+                directories_commands::BACK_TO_SETTINGS,
+                directories_commands::BACK_TO_SETTINGS,
+            )],
         ]
     );
     match dirs.len() {
@@ -81,10 +85,6 @@ pub async fn add_directory_dialogue(
             vec![InlineKeyboardButton::callback(
                 directories_commands::ADD_DIRECTORY,
                 directories_commands::ADD_DIRECTORY,
-            )],
-            vec![InlineKeyboardButton::callback(
-                directories_commands::BACK_TO_SETTINGS,
-                directories_commands::BACK_TO_SETTINGS,
             )],
         ]
     );
