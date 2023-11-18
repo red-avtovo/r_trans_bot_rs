@@ -46,3 +46,8 @@ percent-encoding = "2.1.0"
 #html parser
 scraper = "0.18.1"
 futures = "0.3.26"
+
+[profile.release]
+opt-level = "z"  # Optimize for size.
+strip = true  # Automatically strip symbols from the binary.
+lto = true # Perform link-time optimizations.
