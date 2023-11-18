@@ -1,3 +1,4 @@
+use log::info;
 use reqwest::Url;
 use scraper::{Html, Selector};
 
@@ -18,9 +19,15 @@ pub fn find_magnet(html: String) -> Option<String> {
     document
         .select(&selector)
         .next()
-        .map(|e| e.value().attr("href"))
+        .map(|e| {
+            info!("Found a.magnet-link section, getting href from it: {:?}", e);
+            e.value().attr("href")
+        })
         .flatten()
-        .map(|s| s.to_string())
+        .map(|s| {
+            info!("Found magnet link: {}", s);
+            s.to_string()
+        })
 }
 
 #[cfg(test)]

@@ -14,8 +14,9 @@ use log::*;
 use teloxide::Bot;
 use teloxide::prelude::*;
 use teloxide::requests::Requester;
-use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup, KeyboardMarkup, KeyboardRemove, True};
+use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup, KeyboardRemove, True};
 use teloxide::utils::command::BotCommands;
+use crate::conversation::shared_server::share_server_management;
 
 use crate::router::{BotDialogue, HandlerResult, State};
 
@@ -42,6 +43,8 @@ pub enum Command {
 
 pub mod settings_commands {
     pub const MENU: &str = "Settings ⚙️";
+    pub const BACK_TO_SETTINGS: &str = "Back to settings ⬅️";
+    pub const HIDE_MESSAGE: &str = "Hide 🙈";
 }
 
 fn settings_buttons() -> InlineKeyboardMarkup {
@@ -141,5 +144,11 @@ pub async fn add_friend_command(bot: Bot, dialogue: BotDialogue, msg: Message) -
 pub async fn list_friends_command(bot: Bot, pool: Pool, msg: Message) -> HandlerResult {
     let user = msg.from().unwrap();
     list_friends(&bot, &pool, &user.id.0, &msg.chat.id).await?;
+    Ok(())
+}
+
+pub async fn share_server_command(bot: Bot, pool: Pool, msg: Message) -> HandlerResult {
+    let user = msg.from().unwrap();
+    share_server_management(&bot, &pool, &user.id.0, &msg.chat.id).await?;
     Ok(())
 }

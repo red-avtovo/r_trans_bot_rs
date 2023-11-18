@@ -51,7 +51,3 @@ async fn main() {
 fn run_migration(conn: &mut PgConnection) {
     conn.run_pending_migrations(MIGRATIONS).unwrap();
 }
-
-fn error_handler_fn(bot: Bot, error: Box<dyn std::error::Error>) {
-
-}

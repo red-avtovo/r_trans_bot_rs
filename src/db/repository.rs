@@ -143,6 +143,7 @@ pub(crate) async fn get_task_by_id(
         .optional()?)
 }
 
+#[allow(dead_code)]
 pub(crate) async fn get_tasks_by_server_id(
     pool: &Pool,
     id: &Uuid,

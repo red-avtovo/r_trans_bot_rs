@@ -2,6 +2,7 @@ use teloxide::Bot;
 use teloxide::prelude::*;
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup, Message, ParseMode};
 use transmission_rpc::{TransClient, types::BasicAuth};
+use crate::conversation::commands::settings_commands::BACK_TO_SETTINGS;
 
 use crate::core::trans_url::TransUrl;
 use crate::db::{
@@ -21,7 +22,6 @@ pub mod servers_commands {
     pub const SERVER_STATS: &str = "Server stats 👀";
     pub const REGISTER_SERVER: &str = "Register server 🧰+";
     pub const RESET_SERVERS: &str = "Reset Servers 🧰❌";
-    pub const BACK_TO_SETTINGS: &str = "Back to settings ⬅️";
 }
 
 pub async fn show_stats(
@@ -41,8 +41,8 @@ pub async fn show_stats(
                 servers_commands::RESET_SERVERS,
             )],
             vec![InlineKeyboardButton::callback(
-                servers_commands::BACK_TO_SETTINGS,
-                servers_commands::BACK_TO_SETTINGS,
+                BACK_TO_SETTINGS,
+                BACK_TO_SETTINGS,
             )],
         ]
     );

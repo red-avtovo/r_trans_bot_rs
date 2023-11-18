@@ -8,6 +8,7 @@ use transmission_rpc::{
     types::{Id, Torrent, TorrentAddArgs, TorrentAddedOrDuplicate},
 };
 use uuid::Uuid;
+use crate::conversation::commands::settings_commands::HIDE_MESSAGE;
 
 use crate::conversation::directories::directories_commands;
 use crate::conversation::servers::servers_commands;
@@ -20,12 +21,10 @@ use crate::db::{
     },
 };
 use crate::errors::BotError;
-use crate::errors::BotErrorKind::BotLogic;
 
 pub mod task_commands {
     pub const TASK_STATUS: &str = "Update task status 👀";
     pub const TASK_REMOVE: &str = "Delete torrent ❌";
-    pub const TASK_HIDE: &str = "Hide 🙈";
 }
 
 async fn get_server(bot: &Bot, pool: &Pool, user: &User, chat_id: &ChatId) -> Option<Server> {
@@ -59,10 +58,8 @@ fn update_task_status_button(task_id: &Uuid, torrent: &Torrent) -> InlineKeyboar
                     task_commands::TASK_REMOVE,
                     format!("t_remove:{}", &task_id),
                 )],
-                     vec![InlineKeyboardButton::callback(
-                         task_commands::TASK_HIDE,
-                         task_commands::TASK_HIDE,
-                     )]],
+                     vec![InlineKeyboardButton::callback(HIDE_MESSAGE, HIDE_MESSAGE)],
+                ],
             )
         }
         _ => {
@@ -77,10 +74,9 @@ fn update_task_status_button(task_id: &Uuid, torrent: &Torrent) -> InlineKeyboar
 }
 
 fn hide_message_button() -> InlineKeyboardMarkup {
-    InlineKeyboardMarkup::new(vec![vec![InlineKeyboardButton::callback(
-        task_commands::TASK_HIDE,
-        task_commands::TASK_HIDE,
-    )]])
+    InlineKeyboardMarkup::new(
+        vec![vec![InlineKeyboardButton::callback(HIDE_MESSAGE, HIDE_MESSAGE)]]
+    )
 }
 
 pub async fn start_download(

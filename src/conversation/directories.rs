@@ -1,6 +1,7 @@
 use teloxide::Bot;
 use teloxide::prelude::*;
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup, Message, ParseMode};
+use crate::conversation::commands::settings_commands::BACK_TO_SETTINGS;
 
 use crate::db::models::directories::DownloadDirectory;
 use crate::db::repository::{add_directory, delete_directories, get_directories, get_user, Pool};
@@ -11,8 +12,6 @@ pub mod directories_commands {
     pub const LIST_DIRECTORIES: &str = "List Directories 📂";
     pub const ADD_DIRECTORY: &str = "Add Directory 📂+";
     pub const RESET_DIRECTORIES: &str = "Reset Directories 📂❌";
-
-    pub const BACK_TO_SETTINGS: &str = "Back to settings ⬅️";
 }
 
 pub async fn list_directories(
@@ -33,10 +32,7 @@ pub async fn list_directories(
                 directories_commands::RESET_DIRECTORIES,
                 directories_commands::RESET_DIRECTORIES,
             )],
-            vec![InlineKeyboardButton::callback(
-                directories_commands::BACK_TO_SETTINGS,
-                directories_commands::BACK_TO_SETTINGS,
-            )],
+            vec![InlineKeyboardButton::callback(BACK_TO_SETTINGS, BACK_TO_SETTINGS)],
         ]
     );
     match dirs.len() {

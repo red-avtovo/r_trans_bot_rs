@@ -4,3 +4,4 @@ pub(crate) mod servers;
 pub(crate) mod tasks;
 pub(crate) mod messages;
 pub(crate) mod friends;
+mod shared_server;

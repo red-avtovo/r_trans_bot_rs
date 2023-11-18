@@ -1,4 +1,4 @@
-use log::{debug, warn};
+use log::{debug, info, warn};
 use teloxide::net::Download;
 use teloxide::prelude::*;
 use teloxide::types::{ForwardedFrom, Me, True};
@@ -51,9 +51,10 @@ async fn try_to_process_rutracker_link(
     data: &String,
 ) -> HandlerResult {
     let url = data.to_lowercase();
-    debug!("Fetching {}", url);
+    info!("Fetching '{}'", &url);
     match get_magnet(url).await {
         Ok(optional_magnet) => {
+            info!("Fetched successfully");
             match optional_magnet {
                 Some(magnet_link) => {
                     try_to_process_magnet(&bot, pool, message, &magnet_link).await
@@ -68,6 +69,7 @@ async fn try_to_process_rutracker_link(
             }
         }
         _ => {
+            info!("Failed to fetch");
             bot.send_message(
                 message.chat.id,
                 "Couldn't fetch the link. Try to send the magnet manually",

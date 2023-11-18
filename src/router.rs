@@ -5,6 +5,7 @@ use teloxide::prelude::*;
 use teloxide::types::Update;
 
 use crate::conversation::commands::*;
+use crate::conversation::commands::settings_commands::BACK_TO_SETTINGS;
 use crate::conversation::directories::*;
 use crate::conversation::friends::{confirm_unfriend_callback, manage_friend_callback, unfriend_callback};
 use crate::conversation::messages::*;
@@ -22,7 +23,6 @@ pub enum State {
     AddDirectory,
     RegisterServer,
     AddFriend,
-    ServerSharing,
 }
 
 pub(crate) fn schema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
@@ -35,6 +35,7 @@ pub(crate) fn schema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync 
         .branch(case![Command::Cancel].endpoint(cancel_command))
         .branch(case![Command::AddFriend].endpoint(add_friend_command))
         .branch(case![Command::ListFriends].endpoint(list_friends_command))
+        .branch(case![Command::ServerSharing].endpoint(share_server_command))
         ;
 
     let message_handler = Update::filter_message()
@@ -115,10 +116,7 @@ async fn process_callback(
                 dialogue.update(State::RegisterServer).await?;
             };
         }
-        servers_commands::BACK_TO_SETTINGS => {
-            back_to_settings_command(&bot,  &message).await?;
-        }
-        directories_commands::BACK_TO_SETTINGS => {
+        BACK_TO_SETTINGS  => {
             back_to_settings_command(&bot,  &message).await?;
         }
         _ => {}
@@ -126,8 +124,7 @@ async fn process_callback(
     match data {
         s if s.starts_with("t_status:") => {}
         s if s.starts_with("t_remove:") => {}
-        s if s.starts_with(servers_commands::BACK_TO_SETTINGS) => {}
-        s if s.starts_with(directories_commands::BACK_TO_SETTINGS) => {}
+        s if s.starts_with(BACK_TO_SETTINGS) => {}
         _ => delete_or_hide(&bot, &message).await?
     }
     bot.answer_callback_query(callback_query.id).await?;

@@ -5,6 +5,7 @@ use rand::SeedableRng;
 use teloxide::Bot;
 use teloxide::prelude::*;
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
+use crate::conversation::commands::settings_commands::HIDE_MESSAGE;
 
 use crate::db::repository::{delete_friend, get_friends, get_user, Pool};
 use crate::errors::BotError;
@@ -42,7 +43,7 @@ pub async fn manage_friend_callback(bot: &Bot, pool: &Pool, data: &str, message:
         Some(u) => {
             let kb = InlineKeyboardMarkup::new(vec![
                 vec![InlineKeyboardButton::callback("Unfriend", format!("unfriend:{}", u.id))],
-                vec![InlineKeyboardButton::callback("Hide message", "-")]
+                vec![InlineKeyboardButton::callback(HIDE_MESSAGE, HIDE_MESSAGE)]
             ]);
             bot.send_message(message.chat.id, format!("This is your friend {}", u.username.unwrap()))
                 .reply_markup(kb)
