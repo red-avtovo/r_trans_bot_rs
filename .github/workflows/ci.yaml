@@ -33,7 +33,7 @@ jobs:
       uses: canastro/copy-action@0.0.2
       with:
         source: target/x86_64-unknown-linux-gnu/release/remote-transmission-bot
-        target: ./remote-trans-bot
+        target: ./remote-transmission-bot
 
     - name: Docker login
       uses: azure/docker-login@v1
