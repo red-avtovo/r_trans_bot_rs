@@ -29,7 +29,6 @@ struct FlaresolverResponse {
 
 #[derive(serde::Deserialize)]
 struct FlaresolverSolution {
-    url: String,
     response: String,
 }
 

@@ -5,12 +5,11 @@ use teloxide::types::{ForwardedFrom, Me, True};
 use crate::conversation::tasks::process_magnet;
 use crate::core::{
     flaresolver::Flaresolver,
-    rutracker::get_magnet
+    rutracker::find_magnet
 };
 use crate::db::repository::{add_friend, find_friend, get_user, Pool};
 use crate::router::HandlerResult;
-use futures::stream::StreamExt;
-use crate::core::rutracker::find_magnet;  // for .next()
+use futures::stream::StreamExt; // for .next()
 
 pub async fn process_message(
     bot: Bot,
@@ -32,7 +31,7 @@ pub async fn process_message(
             }
             None => {}
         }
-        return Ok(())
+        return Ok(());
     };
 
     match message.text().map(ToOwned::to_owned) {
@@ -125,7 +124,7 @@ pub async fn add_friend_dialogue(bot: Bot, pool: Pool, msg: Message, me: Me) -> 
             return Ok(());
         }
         Some(it) => {
-               it
+            it
         }
     };
     let forwarded_user = match forwarded_from {
@@ -140,20 +139,20 @@ pub async fn add_friend_dialogue(bot: Bot, pool: Pool, msg: Message, me: Me) -> 
     let from_user_username = from.username.clone().unwrap();
     if forwarded_user.id.eq(&me.id) {
         bot.send_message(msg.chat.id, format!("Aww! We are already friends, {} ❤️", from_user_username)).await?;
-        return Ok(())
+        return Ok(());
     }
 
 
     if forwarded_user.id.eq(&from.id) {
         bot.send_message(msg.chat.id, "Funny enough, you can't befriend yourself.").await?;
-        return Ok(())
+        return Ok(());
     }
 
     let friend_user_id = forwarded_user.id.0 as i64;
     let db_user = get_user(&pool, &friend_user_id).await?;
     if db_user.is_none() {
         bot.send_message(msg.chat.id, "I don't know this user. Please ask your friend to start a conversation with me first").await?;
-        return Ok(())
+        return Ok(());
     }
 
     let forwarded_user_username = forwarded_user.username.clone().unwrap();
@@ -161,7 +160,7 @@ pub async fn add_friend_dialogue(bot: Bot, pool: Pool, msg: Message, me: Me) -> 
     let friend_user = find_friend(&pool, &requester_user_id, &friend_user_id).await?;
     if friend_user.is_some() {
         bot.send_message(msg.chat.id, format!("You are already friends with {}", forwarded_user_username)).await?;
-        return Ok(())
+        return Ok(());
     }
 
     add_friend(&pool, &requester_user_id, &friend_user_id).await?;
