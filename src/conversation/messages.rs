@@ -1,3 +1,4 @@
+use std::env;
 use log::{debug, info, warn};
 use teloxide::net::Download;
 use teloxide::prelude::*;
@@ -54,7 +55,16 @@ async fn try_to_process_rutracker_link(
     data: &String,
 ) -> HandlerResult {
     let url = data.to_lowercase();
-    let solver_url = option_env!("FLARESOLVER_URL").expect("FLARESOLVER_URL env variable is not set");
+    let solver_url = match env::var("FLARESOLVER_URL") {
+        Ok(v) => v,
+        Err(_) => {
+            bot.send_message(
+                message.chat.id,
+                "FLARESOLVER_URL is not set, can't parse rutracker links",
+            ).await?;
+            return Ok(());
+        }
+    };
     let solver = Flaresolver::new(solver_url.to_string());
     info!("Fetching '{}'", &url);
     match solver.get_page_html(url)
