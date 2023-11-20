@@ -10,6 +10,7 @@ metadata:
 data:
   DB_USER: rtrans_user
   DB_NAME: rtrans
+  FLARESOLVER_URL: http://flaresolver.media.svc.cluster.local/v1
   RUST_LOG: info
 
 ---

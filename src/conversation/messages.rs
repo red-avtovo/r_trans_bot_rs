@@ -3,10 +3,14 @@ use teloxide::net::Download;
 use teloxide::prelude::*;
 use teloxide::types::{ForwardedFrom, Me, True};
 use crate::conversation::tasks::process_magnet;
-use crate::core::rutracker::get_magnet;
+use crate::core::{
+    flaresolver::Flaresolver,
+    rutracker::get_magnet
+};
 use crate::db::repository::{add_friend, find_friend, get_user, Pool};
 use crate::router::HandlerResult;
-use futures::stream::StreamExt;  // for .next()
+use futures::stream::StreamExt;
+use crate::core::rutracker::find_magnet;  // for .next()
 
 pub async fn process_message(
     bot: Bot,
@@ -51,8 +55,14 @@ async fn try_to_process_rutracker_link(
     data: &String,
 ) -> HandlerResult {
     let url = data.to_lowercase();
+    let solver_url = option_env!("FLARESOLVER_URL").expect("FLARESOLVER_URL env variable is not set");
+    let solver = Flaresolver::new(solver_url.to_string());
     info!("Fetching '{}'", &url);
-    match get_magnet(url).await {
+    match solver.get_page_html(url)
+        .await
+        .map(|html|
+            html.and_then(|text| find_magnet(text))
+        ) {
         Ok(optional_magnet) => {
             info!("Fetched successfully");
             match optional_magnet {
