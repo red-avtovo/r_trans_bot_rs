@@ -14,7 +14,6 @@ pub async fn get_magnet(url: String) -> Result<Option<String>, reqwest::Error> {
 }
 
 pub fn find_magnet(html: String) -> Option<String> {
-    info!("Parsing html: {}", html);
     let document = Html::parse_document(&html);
     let selector = Selector::parse("a.magnet-link").unwrap();
     document
