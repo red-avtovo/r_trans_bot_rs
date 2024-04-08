@@ -11,7 +11,7 @@ readme = "README.md"
 dotenvy = "0.15.5"
 
 # IO
-reqwest = { version = "0.11.22", features = ["json", "rustls-tls"] }
+reqwest = { version = "0.12.3", features = ["json", "rustls-tls"] }
 tokio = { version = "1.33.0", features = ["rt-multi-thread", "macros"] }
 
 # Db
