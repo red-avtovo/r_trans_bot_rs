@@ -32,8 +32,6 @@ spec:
       labels:
         app: rtrans_bot
     spec:
-      nodeSelector:
-        host: self
       containers:
         - name: rtrans-bot
           image: redavtovo/r-trans-bot-rs:latest
