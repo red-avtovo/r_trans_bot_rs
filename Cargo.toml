@@ -38,7 +38,7 @@ chrono = "0.4.19"
 
 # crypto
 aes-gcm = "0.10.3"
-base64 = "0.21.5"
+base64 = "0.22.1"
 
 #urlencode
 percent-encoding = "2.1.0"
