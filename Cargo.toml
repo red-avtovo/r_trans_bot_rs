@@ -44,7 +44,7 @@ base64 = "0.22.1"
 percent-encoding = "2.1.0"
 
 #html parser
-scraper = "0.18.1"
+scraper = "0.20.0"
 futures = "0.3.26"
 
 [profile.release]
